@@ -9,6 +9,7 @@ import 'package:meraki/src/ui/meraki_theme.dart';
 import 'package:meraki/src/ui/screens/now_playing_screen.dart';
 import 'package:meraki/src/ui/screens/settings_screen.dart';
 import 'package:meraki/src/ui/widgets/cover_art_image.dart';
+import 'package:meraki/src/ui/widgets/cover_flow_spotlight.dart';
 import 'package:meraki/src/ui/widgets/glass_panel.dart';
 import 'package:meraki/src/ui/widgets/mini_player.dart';
 import 'package:meraki/src/ui/widgets/song_tile.dart';
@@ -476,18 +477,12 @@ class _HomeDashboard extends StatelessWidget {
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 14)),
               SliverToBoxAdapter(
-                child: _SpotlightCarousel(
+                child: CoverFlowSpotlight(
                   songs: songs,
                   onPlay: (song) => state.playSong(song, songs),
                   desktop: desktop,
                 ),
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 30)),
-              const SliverToBoxAdapter(
-                child: _SectionHeader(title: 'Categorias'),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 12)),
-              const SliverToBoxAdapter(child: _CategoryChips()),
               const SliverToBoxAdapter(child: SizedBox(height: 30)),
               SliverToBoxAdapter(
                 child: _SectionHeader(
@@ -864,7 +859,7 @@ class _CategoryChipsState extends State<_CategoryChips> {
   }
 }
 
-class _PopularGrid extends StatelessWidget {
+class _PopularGrid extends StatefulWidget {
   const _PopularGrid({
     required this.songs,
     required this.state,
@@ -876,22 +871,51 @@ class _PopularGrid extends StatelessWidget {
   final bool desktop;
 
   @override
+  State<_PopularGrid> createState() => _PopularGridState();
+}
+
+class _PopularGridState extends State<_PopularGrid> {
+  List<Song> _items = const <Song>[];
+  String _catalogSignature = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshSelection();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PopularGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _refreshSelection();
+  }
+
+  void _refreshSelection() {
+    final signature = widget.songs.map((song) => song.id).join('|');
+    if (signature == _catalogSignature) return;
+
+    final selection = List<Song>.of(widget.songs)
+      ..shuffle(math.Random(signature.hashCode));
+    _catalogSignature = signature;
+    _items = selection.take(widget.desktop ? 12 : 8).toList(growable: false);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final items = songs.take(desktop ? 12 : 8).toList(growable: false);
-    if (items.isEmpty) {
+    if (_items.isEmpty) {
       return const SliverToBoxAdapter(child: _EmptyCatalogHint());
     }
     return SliverGrid.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: desktop ? 6 : 2,
+        crossAxisCount: widget.desktop ? 6 : 2,
         mainAxisSpacing: 14,
         crossAxisSpacing: 14,
-        childAspectRatio: desktop ? 0.78 : 0.82,
+        childAspectRatio: widget.desktop ? 0.78 : 0.82,
       ),
-      itemCount: items.length,
+      itemCount: _items.length,
       itemBuilder: (context, index) => _PopularSongCard(
-        song: items[index],
-        onTap: () => state.playSong(items[index], songs),
+        song: _items[index],
+        onTap: () => widget.state.playSong(_items[index], widget.songs),
       ),
     );
   }
@@ -1228,16 +1252,7 @@ class _ProfileHeader extends StatelessWidget {
           child: Icon(Icons.person_rounded, color: Colors.white),
         ),
         SizedBox(width: 9),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text('Molly Hunter', style: TextStyle(fontWeight: FontWeight.w700)),
-            Text(
-              'Premium',
-              style: TextStyle(fontSize: 11, color: MerakiColors.softText),
-            ),
-          ],
-        ),
+        Text('Molly Hunter', style: TextStyle(fontWeight: FontWeight.w700)),
       ],
     );
   }
@@ -1256,19 +1271,9 @@ class _ProfileCard extends StatelessWidget {
         ),
         SizedBox(width: 10),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                'Molly Hunter',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-              SizedBox(height: 2),
-              Text(
-                'Premium',
-                style: TextStyle(fontSize: 12, color: MerakiColors.softText),
-              ),
-            ],
+          child: Text(
+            'Molly Hunter',
+            style: TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
       ],

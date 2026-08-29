@@ -17,7 +17,6 @@ dependencies:
   just_audio: ^0.10.6
   just_audio_media_kit: ^2.1.0
   media_kit_libs_linux: ^1.2.1
-  palette_generator_plus: ^1.0.0
   path: ^1.9.1
   path_provider: ^2.1.6
   phosphoricons_flutter: ^1.0.0

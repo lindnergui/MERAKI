@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:meraki/src/ui/meraki_theme.dart';
 
 class GlassPanel extends StatelessWidget {
   const GlassPanel({
@@ -22,9 +23,9 @@ class GlassPanel extends StatelessWidget {
     final surface = Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: enableBlur ? 0.075 : 0.10),
+        color: MerakiColors.panel,
         borderRadius: borderRadius,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        border: Border.all(color: accent.withValues(alpha: 0.20)),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: accent.withValues(alpha: 0.06),

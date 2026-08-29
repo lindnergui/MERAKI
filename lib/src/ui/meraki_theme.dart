@@ -1,23 +1,36 @@
 import 'package:flutter/material.dart';
 
 abstract final class MerakiColors {
-  static const Color deepPurple = Color(0xFF120E21);
-  static const Color sidebar = Color(0xFF191426);
-  static const Color panel = Color(0xFF201A31);
+  /// Base shared by the scaffold, desktop sidebar and content panels.
+  static const Color deepPurple = Color(0xFF341539);
+  static const Color sidebar = Color(0xFF341539);
+  static const Color panel = Color(0xFF341539);
   static const Color softText = Color(0xFFBEB6CC);
-  static const Color defaultAccent = Color(0xFFFF4F8B);
+  static const Color defaultAccent = Color(0xFFCBC3E3);
 }
 
-ThemeData buildMerakiTheme(Color accent) {
+ThemeData buildMerakiTheme() {
+  const accent = MerakiColors.defaultAccent;
   final scheme =
       ColorScheme.fromSeed(
         seedColor: accent,
         brightness: Brightness.dark,
       ).copyWith(
         primary: accent,
+        primaryContainer: accent,
+        secondary: accent,
+        secondaryContainer: accent,
+        tertiary: accent,
+        tertiaryContainer: accent,
+        onPrimary: MerakiColors.deepPurple,
+        onPrimaryContainer: MerakiColors.deepPurple,
+        onSecondary: MerakiColors.deepPurple,
+        onSecondaryContainer: MerakiColors.deepPurple,
+        onTertiary: MerakiColors.deepPurple,
+        onTertiaryContainer: MerakiColors.deepPurple,
         surface: MerakiColors.deepPurple,
         surfaceContainer: MerakiColors.panel,
-        surfaceContainerHigh: const Color(0xFF282136),
+        surfaceContainerHigh: MerakiColors.panel,
         onSurface: const Color(0xFFF6F1FA),
         onSurfaceVariant: MerakiColors.softText,
       );

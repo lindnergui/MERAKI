@@ -30,19 +30,14 @@ class _MerakiAppState extends State<MerakiApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Color>(
-      valueListenable: _playerController.accentColor,
-      builder: (context, accent, _) {
-        return MaterialApp(
-          title: 'Meraki',
-          debugShowCheckedModeBanner: false,
-          theme: buildMerakiTheme(accent),
-          home: HomeScreen(
-            libraryController: _libraryController,
-            playerController: _playerController,
-          ),
-        );
-      },
+    return MaterialApp(
+      title: 'Meraki',
+      debugShowCheckedModeBanner: false,
+      theme: buildMerakiTheme(),
+      home: HomeScreen(
+        libraryController: _libraryController,
+        playerController: _playerController,
+      ),
     );
   }
 
