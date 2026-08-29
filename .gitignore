@@ -1,0 +1,31 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+
+# Rust
+target/
+rust_core/target/
+
+# Generated flutter_rust_bridge code
+lib/src/rust/
+rust_core/src/frb_generated.rs
+
+# Editors / OS
+.idea/
+.vscode/
+*.iml
+*.log
+.DS_Store
+
+# Local credentials and databases
+.env
+*.sqlite
+*.sqlite3
+*.db
+

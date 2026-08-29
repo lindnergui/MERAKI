@@ -1,0 +1,33 @@
+name: meraki
+description: A modern Subsonic and local music player for Android and Linux.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+
+dependencies:
+  audio_service: ^0.18.19
+  audio_service_mpris: ^0.2.1
+  file_picker: ^12.1.1
+  audio_session: ^0.2.4
+  flutter:
+    sdk: flutter
+  flutter_rust_bridge: 2.13.0
+  just_audio: ^0.10.6
+  just_audio_media_kit: ^2.1.0
+  media_kit_libs_linux: ^1.2.1
+  path: ^1.9.1
+  path_provider: ^2.1.6
+  rust_lib_meraki:
+    path: rust_builder
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

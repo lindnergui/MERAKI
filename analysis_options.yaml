@@ -1,0 +1,17 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - lib/src/rust/**
+    - build/**
+    - linux/**
+
+    - rust_builder/cargokit/**
+linter:
+  rules:
+    always_use_package_imports: true
+    avoid_print: true
+    directives_ordering: true
+    prefer_final_locals: true
+    unawaited_futures: true
+

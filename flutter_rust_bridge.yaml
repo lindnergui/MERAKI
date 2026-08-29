@@ -1,0 +1,6 @@
+rust_input: crate::api
+rust_root: rust_core/
+dart_output: lib/src/rust
+dart_entrypoint_class_name: RustLib
+web: false
+
