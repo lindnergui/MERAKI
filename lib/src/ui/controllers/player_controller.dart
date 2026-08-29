@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:meraki/src/audio/meraki_audio_handler.dart';
 import 'package:meraki/src/rust/models/song.dart';
+import 'package:palette_generator_plus/palette_generator_plus.dart';
 
 /// Reactive projection of the handler's MediaItem and PlaybackState streams.
 ///
@@ -15,6 +17,7 @@ class PlayerController extends ChangeNotifier {
     _mediaItemSubscription = _audioHandler.mediaItem.listen((item) {
       currentItem.value = item;
       _updateProjectedPosition();
+      unawaited(_extractAccentColor(item));
       notifyListeners();
     });
     _playbackStateSubscription = _audioHandler.playbackState.listen((state) {
@@ -35,9 +38,13 @@ class PlayerController extends ChangeNotifier {
   final ValueNotifier<Duration> position = ValueNotifier<Duration>(
     Duration.zero,
   );
+  final ValueNotifier<Color> accentColor = ValueNotifier<Color>(_defaultAccent);
   late final StreamSubscription<MediaItem?> _mediaItemSubscription;
   late final StreamSubscription<PlaybackState> _playbackStateSubscription;
   late final Timer _positionTimer;
+  int _accentRequest = 0;
+
+  static const Color _defaultAccent = Color(0xFFFF4F8B);
 
   bool get isPlaying => playbackState.value.playing;
   bool get hasActiveItem => currentItem.value != null;
@@ -88,6 +95,51 @@ class PlayerController extends ChangeNotifier {
     }
   }
 
+  Future<void> _extractAccentColor(MediaItem? item) async {
+    final request = ++_accentRequest;
+    final provider = _imageProviderFor(item?.artUri);
+    if (provider == null) {
+      accentColor.value = _defaultAccent;
+      return;
+    }
+
+    try {
+      // Quantization runs in a background isolate on native platforms, so a
+      // large album image never blocks Flutter's raster/UI threads.
+      final palette = await PaletteGenerator.fromImageProvider(
+        provider,
+        size: const Size(112, 112),
+        maximumColorCount: 12,
+      );
+      final color =
+          palette.vibrantColor?.color ??
+          palette.lightVibrantColor?.color ??
+          palette.dominantColor?.color ??
+          _defaultAccent;
+      if (request == _accentRequest) {
+        accentColor.value = color;
+      }
+    } catch (_) {
+      if (request == _accentRequest) {
+        accentColor.value = _defaultAccent;
+      }
+    }
+  }
+
+  ImageProvider? _imageProviderFor(Uri? artUri) {
+    if (artUri == null) return null;
+    if (artUri.scheme == 'http' || artUri.scheme == 'https') {
+      return NetworkImage(artUri.toString());
+    }
+    if (artUri.scheme == 'file') {
+      return FileImage(File.fromUri(artUri));
+    }
+    if (artUri.scheme.isEmpty) {
+      return FileImage(File(artUri.toString()));
+    }
+    return null;
+  }
+
   @override
   void dispose() {
     _positionTimer.cancel();
@@ -96,6 +148,7 @@ class PlayerController extends ChangeNotifier {
     currentItem.dispose();
     playbackState.dispose();
     position.dispose();
+    accentColor.dispose();
     super.dispose();
   }
 }

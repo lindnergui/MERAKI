@@ -3,6 +3,7 @@ import 'package:meraki/src/audio/meraki_audio_handler.dart';
 import 'package:meraki/src/data/music_repository.dart';
 import 'package:meraki/src/ui/controllers/library_controller.dart';
 import 'package:meraki/src/ui/controllers/player_controller.dart';
+import 'package:meraki/src/ui/meraki_theme.dart';
 import 'package:meraki/src/ui/screens/home_screen.dart';
 
 class MerakiApp extends StatefulWidget {
@@ -29,22 +30,19 @@ class _MerakiAppState extends State<MerakiApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Meraki',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF8D31E8),
-          brightness: Brightness.dark,
-        ),
-        scaffoldBackgroundColor: const Color(0xFF1D0734),
-        useMaterial3: true,
-      ),
-      home: HomeScreen(
-        libraryController: _libraryController,
-        playerController: _playerController,
-      ),
+    return ValueListenableBuilder<Color>(
+      valueListenable: _playerController.accentColor,
+      builder: (context, accent, _) {
+        return MaterialApp(
+          title: 'Meraki',
+          debugShowCheckedModeBanner: false,
+          theme: buildMerakiTheme(accent),
+          home: HomeScreen(
+            libraryController: _libraryController,
+            playerController: _playerController,
+          ),
+        );
+      },
     );
   }
 
