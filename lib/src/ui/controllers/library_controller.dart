@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:meraki/src/data/music_repository.dart';
+import 'package:meraki/src/data/user_preferences.dart';
 import 'package:meraki/src/rust/models/song.dart';
 
 enum LibrarySection { all, local, subsonic, albums }
@@ -9,11 +10,16 @@ enum LibrarySection { all, local, subsonic, albums }
 /// All repository methods return FRB futures, so awaiting them here yields the
 /// Flutter event loop instead of blocking rendering or gesture handling.
 class LibraryController extends ChangeNotifier {
-  LibraryController({required MusicRepository repository})
-    : _repository = repository;
+  LibraryController({
+    required MusicRepository repository,
+    required UserPreferences userPreferences,
+  }) : _repository = repository,
+       _userPreferences = userPreferences;
 
   final MusicRepository _repository;
+  final UserPreferences _userPreferences;
   List<Song> _songs = const <Song>[];
+  Set<String> _favoriteSongIds = <String>{};
   bool _isLoading = false;
   bool _isScanningLocal = false;
   bool _isSyncingSubsonic = false;
@@ -25,6 +31,11 @@ class LibraryController extends ChangeNotifier {
   bool get isSyncingSubsonic => _isSyncingSubsonic;
   bool get isBusy => _isLoading || _isScanningLocal || _isSyncingSubsonic;
   String? get errorMessage => _errorMessage;
+  List<Song> get favoriteSongs => _songs
+      .where((song) => _favoriteSongIds.contains(song.id))
+      .toList(growable: false);
+
+  bool isFavorite(String songId) => _favoriteSongIds.contains(songId);
 
   List<Song> songsFor(LibrarySection section) {
     return switch (section) {
@@ -57,7 +68,12 @@ class LibraryController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _songs = await _repository.getAllSongs();
+      final results = await Future.wait<Object>(<Future<Object>>[
+        _repository.getAllSongs(),
+        _userPreferences.readFavoriteSongIds(),
+      ]);
+      _songs = results[0] as List<Song>;
+      _favoriteSongIds = results[1] as Set<String>;
     } catch (error) {
       _errorMessage = _friendlyError(error);
       rethrow;
@@ -65,6 +81,17 @@ class LibraryController extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<bool> toggleFavorite(Song song) async {
+    final next = Set<String>.of(_favoriteSongIds);
+    final isNowFavorite = next.add(song.id);
+    if (!isNowFavorite) next.remove(song.id);
+
+    await _userPreferences.saveFavoriteSongIds(next);
+    _favoriteSongIds = next;
+    notifyListeners();
+    return isNowFavorite;
   }
 
   Future<void> scanLocalMusic(String directoryPath) async {

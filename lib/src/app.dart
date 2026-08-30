@@ -29,6 +29,7 @@ class MerakiApp extends StatefulWidget {
 class _MerakiAppState extends State<MerakiApp> {
   late final LibraryController _libraryController = LibraryController(
     repository: widget.repository,
+    userPreferences: widget.userPreferences,
   );
   late final PlayerController _playerController = PlayerController(
     audioHandler: widget.audioHandler,

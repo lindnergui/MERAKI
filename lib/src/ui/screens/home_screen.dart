@@ -15,7 +15,7 @@ import 'package:meraki/src/ui/widgets/mini_player.dart';
 import 'package:meraki/src/ui/widgets/song_tile.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-enum _HomeDestination { home, allSongs, downloads, albums, artists }
+enum _HomeDestination { home, allSongs, favorites, downloads, albums, artists }
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -39,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   _HomeDestination _destination = _HomeDestination.home;
   String _searchQuery = '';
   bool _mobileNowPlaying = false;
+  Song? _selectedSpotlightSong;
 
   @override
   void initState() {
@@ -115,6 +116,37 @@ class _HomeScreenState extends State<HomeScreen> {
       await widget.onLogout();
     } catch (_) {
       if (mounted) _showError('Não foi possível sair. Tente novamente.');
+    }
+  }
+
+  void setSelectedSpotlightSong(Song? song) {
+    if (_selectedSpotlightSong?.id == song?.id) return;
+    setState(() => _selectedSpotlightSong = song);
+  }
+
+  Future<void> toggleSelectedSpotlightFavorite() async {
+    final song = _selectedSpotlightSong;
+    if (song == null) {
+      _showError('Selecione uma música no Meraki Spotlight primeiro.');
+      return;
+    }
+
+    try {
+      final isNowFavorite = await widget.libraryController.toggleFavorite(song);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isNowFavorite
+                  ? '${song.title} foi adicionada às favoritas.'
+                  : '${song.title} foi removida das favoritas.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) _showError('Não foi possível atualizar as favoritas.');
     }
   }
 
@@ -265,6 +297,12 @@ class _MerakiSidebar extends StatelessWidget {
                 onTap: () => state.setDestination(_HomeDestination.allSongs),
               ),
               _SidebarDestination(
+                label: 'Favoritas',
+                icon: PhosphorIconsRegular.heart,
+                selected: state._destination == _HomeDestination.favorites,
+                onTap: () => state.setDestination(_HomeDestination.favorites),
+              ),
+              _SidebarDestination(
                 label: 'Músicas baixadas',
                 icon: PhosphorIconsRegular.downloadSimple,
                 selected: state._destination == _HomeDestination.downloads,
@@ -355,36 +393,55 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(34, 28, 34, 12),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: TextField(
-                onChanged: state.setSearchQuery,
-                decoration: InputDecoration(
-                  hintText: 'Pesquisar por música, álbum ou artista',
-                  prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass),
+    return AnimatedBuilder(
+      animation: state.widget.libraryController,
+      builder: (context, _) => Padding(
+        padding: const EdgeInsets.fromLTRB(34, 28, 34, 12),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: TextField(
+                  onChanged: state.setSearchQuery,
+                  decoration: InputDecoration(
+                    hintText: 'Pesquisar por música, álbum ou artista',
+                    prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass),
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 20),
-          IconButton(
-            tooltip: 'Favoritos',
-            onPressed: () {},
-            icon: Icon(PhosphorIconsRegular.heart),
-          ),
-          IconButton(
-            tooltip: 'Configurações',
-            onPressed: state.openSettings,
-            icon: Icon(PhosphorIconsRegular.gear),
-          ),
-          const SizedBox(width: 10),
-          _ProfileHeader(userName: state.widget.userName),
-        ],
+            const SizedBox(width: 20),
+            IconButton(
+              tooltip: 'Favoritos',
+              onPressed: state._selectedSpotlightSong == null
+                  ? null
+                  : state.toggleSelectedSpotlightFavorite,
+              color:
+                  state._selectedSpotlightSong != null &&
+                      state.widget.libraryController.isFavorite(
+                        state._selectedSpotlightSong!.id,
+                      )
+                  ? Theme.of(context).colorScheme.primary
+                  : null,
+              icon: Icon(
+                state._selectedSpotlightSong != null &&
+                        state.widget.libraryController.isFavorite(
+                          state._selectedSpotlightSong!.id,
+                        )
+                    ? PhosphorIconsFill.heart
+                    : PhosphorIconsRegular.heart,
+              ),
+            ),
+            IconButton(
+              tooltip: 'Configurações',
+              onPressed: state.openSettings,
+              icon: Icon(PhosphorIconsRegular.gear),
+            ),
+            const SizedBox(width: 10),
+            _ProfileHeader(userName: state.widget.userName),
+          ],
+        ),
       ),
     );
   }
@@ -445,6 +502,12 @@ class _ContentForDestination extends StatelessWidget {
         songs: state.filteredSongs,
         state: state,
       ),
+      _HomeDestination.favorites => _SongsPage(
+        title: 'Favoritas',
+        songs: state.widget.libraryController.favoriteSongs,
+        state: state,
+        emptyTitle: 'Nenhuma música favorita ainda',
+      ),
       _HomeDestination.downloads => _SongsPage(
         title: 'Músicas baixadas',
         songs: state.filteredSongs
@@ -498,6 +561,7 @@ class _HomeDashboard extends StatelessWidget {
                   songs: songs,
                   onPlay: (song) => state.playSong(song, songs),
                   desktop: desktop,
+                  onSelectionChanged: state.setSelectedSpotlightSong,
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 30)),

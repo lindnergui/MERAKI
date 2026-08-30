@@ -15,12 +15,14 @@ class CoverFlowSpotlight extends StatefulWidget {
     required this.songs,
     required this.onPlay,
     required this.desktop,
+    this.onSelectionChanged,
     super.key,
   });
 
   final List<Song> songs;
   final ValueChanged<Song> onPlay;
   final bool desktop;
+  final ValueChanged<Song?>? onSelectionChanged;
 
   @override
   State<CoverFlowSpotlight> createState() => _CoverFlowSpotlightState();
@@ -28,14 +30,43 @@ class CoverFlowSpotlight extends StatefulWidget {
 
 class _CoverFlowSpotlightState extends State<CoverFlowSpotlight> {
   late final PageController _pageController = PageController(
-    initialPage: 1,
+    initialPage: 0,
     viewportFraction: 0.60,
   )..addListener(_syncPage);
-  double _page = 1;
+  double _page = 0;
+  String? _selectedSongId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _publishSelection());
+  }
+
+  @override
+  void didUpdateWidget(covariant CoverFlowSpotlight oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.songs != widget.songs) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _publishSelection());
+    }
+  }
 
   void _syncPage() {
     final page = _pageController.page;
-    if (page != null && mounted) setState(() => _page = page);
+    if (page != null && mounted) {
+      setState(() => _page = page);
+      _publishSelection();
+    }
+  }
+
+  void _publishSelection() {
+    if (!mounted) return;
+    final index = _page.round();
+    final song = index >= 0 && index < widget.songs.length
+        ? widget.songs[index]
+        : null;
+    if (_selectedSongId == song?.id) return;
+    _selectedSongId = song?.id;
+    widget.onSelectionChanged?.call(song);
   }
 
   @override

@@ -96,6 +96,13 @@ class MerakiAudioHandler extends BaseAudioHandler
   @override
   Future<void> stop() => _player.stop();
 
+  double get volume => _player.volume;
+  Stream<double> get volumeStream => _player.volumeStream;
+
+  Future<void> setVolume(double volume) {
+    return _player.setVolume(volume.clamp(0.0, 1.0));
+  }
+
   Future<void> dispose() async {
     await _playbackSubscription.cancel();
     await _indexSubscription.cancel();

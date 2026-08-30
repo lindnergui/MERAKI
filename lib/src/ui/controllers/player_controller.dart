@@ -22,6 +22,9 @@ class PlayerController extends ChangeNotifier {
       _updateProjectedPosition();
       notifyListeners();
     });
+    _volumeSubscription = _audioHandler.volumeStream.listen((value) {
+      volume.value = value;
+    });
     _positionTimer = Timer.periodic(
       const Duration(milliseconds: 500),
       (_) => _updateProjectedPosition(),
@@ -35,8 +38,12 @@ class PlayerController extends ChangeNotifier {
   final ValueNotifier<Duration> position = ValueNotifier<Duration>(
     Duration.zero,
   );
+  late final ValueNotifier<double> volume = ValueNotifier<double>(
+    _audioHandler.volume,
+  );
   late final StreamSubscription<MediaItem?> _mediaItemSubscription;
   late final StreamSubscription<PlaybackState> _playbackStateSubscription;
+  late final StreamSubscription<double> _volumeSubscription;
   late final Timer _positionTimer;
 
   bool get isPlaying => playbackState.value.playing;
@@ -55,6 +62,7 @@ class PlayerController extends ChangeNotifier {
   }
 
   Future<void> seek(Duration value) => _audioHandler.seek(value);
+  Future<void> setVolume(double value) => _audioHandler.setVolume(value);
   Future<void> skipNext() => _audioHandler.skipToNext();
   Future<void> skipPrevious() => _audioHandler.skipToPrevious();
 
@@ -93,9 +101,11 @@ class PlayerController extends ChangeNotifier {
     _positionTimer.cancel();
     _mediaItemSubscription.cancel();
     _playbackStateSubscription.cancel();
+    _volumeSubscription.cancel();
     currentItem.dispose();
     playbackState.dispose();
     position.dispose();
+    volume.dispose();
     super.dispose();
   }
 }

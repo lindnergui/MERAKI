@@ -179,7 +179,7 @@ class _DesktopPlayerContent extends StatelessWidget {
               ],
             ),
             const Spacer(),
-            Icon(PhosphorIconsRegular.speakerHigh, color: accent),
+            _VolumeControl(controller: controller),
           ],
         ),
       ),
@@ -307,6 +307,124 @@ class _PlayerIconButton extends StatelessWidget {
           ? Theme.of(context).colorScheme.primary
           : MerakiColors.softText,
       icon: Icon(icon),
+    );
+  }
+}
+
+class _VolumeControl extends StatefulWidget {
+  const _VolumeControl({required this.controller});
+
+  final PlayerController controller;
+
+  @override
+  State<_VolumeControl> createState() => _VolumeControlState();
+}
+
+class _VolumeControlState extends State<_VolumeControl> {
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _volumeOverlay;
+
+  bool get _isOpen => _volumeOverlay != null;
+
+  @override
+  void dispose() {
+    _volumeOverlay?.remove();
+    _volumeOverlay = null;
+    super.dispose();
+  }
+
+  void _toggleVolumeOverlay() {
+    if (_isOpen) {
+      _removeVolumeOverlay();
+      return;
+    }
+
+    final overlay = Overlay.of(context, rootOverlay: true);
+    _volumeOverlay = OverlayEntry(
+      builder: (context) => Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _removeVolumeOverlay,
+            ),
+          ),
+          CompositedTransformFollower(
+            link: _layerLink,
+            targetAnchor: Alignment.topCenter,
+            followerAnchor: Alignment.bottomCenter,
+            offset: const Offset(0, -10),
+            child: _VolumeSlider(controller: widget.controller),
+          ),
+        ],
+      ),
+    );
+    overlay.insert(_volumeOverlay!);
+    setState(() {});
+  }
+
+  void _removeVolumeOverlay() {
+    _volumeOverlay?.remove();
+    _volumeOverlay = null;
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return ValueListenableBuilder<double>(
+      valueListenable: widget.controller.volume,
+      builder: (context, volume, _) {
+        final isMuted = volume <= 0.001;
+        return CompositedTransformTarget(
+          link: _layerLink,
+          child: IconButton(
+            tooltip: _isOpen ? 'Fechar volume' : 'Ajustar volume',
+            onPressed: _toggleVolumeOverlay,
+            color: isMuted ? MerakiColors.softText : accent,
+            icon: Icon(
+              isMuted
+                  ? PhosphorIconsRegular.speakerX
+                  : PhosphorIconsRegular.speakerHigh,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _VolumeSlider extends StatelessWidget {
+  const _VolumeSlider({required this.controller});
+
+  final PlayerController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Material(
+      color: MerakiColors.panel,
+      elevation: 12,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        height: 184,
+        width: 54,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: accent.withValues(alpha: 0.45)),
+        ),
+        child: ValueListenableBuilder<double>(
+          valueListenable: controller.volume,
+          builder: (context, volume, _) => RotatedBox(
+            quarterTurns: 3,
+            child: Slider(
+              value: volume.clamp(0.0, 1.0),
+              onChanged: (value) => unawaited(controller.setVolume(value)),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
