@@ -7,12 +7,9 @@
 .pub/
 build/
 coverage/
-<<<<<<< HEAD
 flatpak/build/
 flatpak/repo/
 dist/*.flatpak
-=======
->>>>>>> 0f84d45483f4c0282b27b5b559ffade94ca85cd7
 
 # Rust
 target/
@@ -34,7 +31,3 @@ rust_core/src/frb_generated.rs
 *.sqlite
 *.sqlite3
 *.db
-<<<<<<< HEAD
-=======
-
->>>>>>> 0f84d45483f4c0282b27b5b559ffade94ca85cd7
