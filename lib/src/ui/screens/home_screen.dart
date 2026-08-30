@@ -51,7 +51,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 860;
+        // Phones use touch-first navigation. At 600dp and above we retain the
+        // desktop shell, which is also the layout used by Linux.
+        final isDesktop = constraints.maxWidth >= 600;
         if (isDesktop) {
           return _DesktopShell(state: this);
         }
@@ -210,10 +212,22 @@ class _MobileShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isBrowsing = !state._mobileNowPlaying;
+    final hasSecondaryPage =
+        state._destination != _HomeDestination.home && isBrowsing;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: MerakiColors.deepPurple,
-        title: const _MerakiWordmark(compact: true),
+        leading: hasSecondaryPage
+            ? IconButton(
+                tooltip: 'Voltar para início',
+                onPressed: () => state.setDestination(_HomeDestination.home),
+                icon: Icon(PhosphorIconsRegular.caretLeft),
+              )
+            : null,
+        title: hasSecondaryPage
+            ? Text(_mobileTitleFor(state._destination))
+            : _MerakiWordmark(compact: true),
         actions: <Widget>[
           IconButton(
             tooltip: 'Configurações',
@@ -252,13 +266,24 @@ class _MobileShell extends StatelessWidget {
               NavigationDestination(
                 icon: Icon(PhosphorIconsRegular.playCircle),
                 selectedIcon: Icon(PhosphorIconsFill.playCircle),
-                label: 'Now Playing',
+                label: 'Tocando agora',
               ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  String _mobileTitleFor(_HomeDestination destination) {
+    return switch (destination) {
+      _HomeDestination.home => 'Browse',
+      _HomeDestination.allSongs => 'Todas as músicas',
+      _HomeDestination.favorites => 'Favoritas',
+      _HomeDestination.downloads => 'Músicas baixadas',
+      _HomeDestination.albums => 'Álbuns',
+      _HomeDestination.artists => 'Artistas',
+    };
   }
 }
 
@@ -501,11 +526,13 @@ class _ContentForDestination extends StatelessWidget {
         title: 'Todas as músicas',
         songs: state.filteredSongs,
         state: state,
+        desktop: desktop,
       ),
       _HomeDestination.favorites => _SongsPage(
         title: 'Favoritas',
         songs: state.widget.libraryController.favoriteSongs,
         state: state,
+        desktop: desktop,
         emptyTitle: 'Nenhuma música favorita ainda',
       ),
       _HomeDestination.downloads => _SongsPage(
@@ -514,6 +541,7 @@ class _ContentForDestination extends StatelessWidget {
             .where((song) => song.source == SongSource.local)
             .toList(growable: false),
         state: state,
+        desktop: desktop,
         emptyTitle: 'Nenhuma música baixada ainda',
       ),
       _HomeDestination.albums => _AlbumsPage(state: state),
@@ -998,16 +1026,22 @@ class _PopularGridState extends State<_PopularGrid> {
       itemBuilder: (context, index) => _PopularSongCard(
         song: _items[index],
         onTap: () => widget.state.playSong(_items[index], widget.songs),
+        enableHover: widget.desktop,
       ),
     );
   }
 }
 
 class _PopularSongCard extends StatefulWidget {
-  const _PopularSongCard({required this.song, required this.onTap});
+  const _PopularSongCard({
+    required this.song,
+    required this.onTap,
+    this.enableHover = true,
+  });
 
   final Song song;
   final VoidCallback onTap;
+  final bool enableHover;
 
   @override
   State<_PopularSongCard> createState() => _PopularSongCardState();
@@ -1020,8 +1054,12 @@ class _PopularSongCardState extends State<_PopularSongCard> {
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onEnter: widget.enableHover
+          ? (_) => setState(() => _hovered = true)
+          : null,
+      onExit: widget.enableHover
+          ? (_) => setState(() => _hovered = false)
+          : null,
       child: AnimatedScale(
         scale: _hovered ? 1.045 : 1,
         duration: const Duration(milliseconds: 170),
@@ -1064,6 +1102,8 @@ class _PopularSongCardState extends State<_PopularSongCard> {
                             borderRadius: BorderRadius.circular(12),
                             child: CoverArtImage(
                               coverArtUrlOrPath: widget.song.coverArtUrlOrPath,
+                              cacheWidth: 420,
+                              cacheHeight: 420,
                             ),
                           ),
                           Positioned(
@@ -1126,19 +1166,26 @@ class _SongsPage extends StatelessWidget {
     required this.title,
     required this.songs,
     required this.state,
+    required this.desktop,
     this.emptyTitle,
   });
 
   final String title;
   final List<Song> songs;
   final _HomeScreenState state;
+  final bool desktop;
   final String? emptyTitle;
 
   @override
   Widget build(BuildContext context) {
     if (songs.isEmpty) return _EmptyCatalogHint(title: emptyTitle);
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+      padding: EdgeInsets.fromLTRB(
+        desktop ? 24 : 16,
+        20,
+        desktop ? 24 : 16,
+        28,
+      ),
       itemCount: songs.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
@@ -1289,22 +1336,18 @@ class _MerakiWordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
+    final iconSize = compact ? 34.0 : 40.0;
     return Row(
       mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
       children: <Widget>[
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: accent,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(7),
-            child: Icon(
-              PhosphorIconsFill.musicNotes,
-              color: MerakiColors.deepPurple,
-              size: 18,
-            ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(iconSize * 0.23),
+          child: Image.asset(
+            'assets/images/meraki_mark.png',
+            width: iconSize,
+            height: iconSize,
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.medium,
           ),
         ),
         const SizedBox(width: 9),

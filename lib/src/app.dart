@@ -30,6 +30,7 @@ class _MerakiAppState extends State<MerakiApp> {
   late final LibraryController _libraryController = LibraryController(
     repository: widget.repository,
     userPreferences: widget.userPreferences,
+    audioHandler: widget.audioHandler,
   );
   late final PlayerController _playerController = PlayerController(
     audioHandler: widget.audioHandler,

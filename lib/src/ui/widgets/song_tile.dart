@@ -46,6 +46,8 @@ class _SongTileState extends State<SongTile> {
             coverArtUrlOrPath: widget.song.coverArtUrlOrPath,
             width: 48,
             height: 48,
+            cacheWidth: 144,
+            cacheHeight: 144,
             borderRadius: const BorderRadius.all(Radius.circular(10)),
           ),
           title: Text(

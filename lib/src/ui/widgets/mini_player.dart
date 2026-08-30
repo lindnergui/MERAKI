@@ -249,6 +249,8 @@ class _TrackIdentity extends StatelessWidget {
               coverArtUrlOrPath: item.artUri?.toString(),
               width: 52,
               height: 52,
+              cacheWidth: 156,
+              cacheHeight: 156,
               borderRadius: const BorderRadius.all(Radius.circular(10)),
             ),
           ),

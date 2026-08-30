@@ -1,55 +1,101 @@
 # Meraki
 
-Meraki é um player de música para Linux e Android que reúne a biblioteca local
-e servidores Subsonic em uma experiência fluida e elegante.
+**Meraki** é um player de música para **Linux** e **Android**. Ele reúne a
+biblioteca local e servidores Subsonic em uma interface dark, com reprodução em
+segundo plano e controles integrados ao sistema.
 
-## Download e instalação (Flatpak)
+## Recursos
 
-Baixe o arquivo `.flatpak` mais recente na página de
+- Biblioteca local e streaming por Subsonic.
+- Reprodução em segundo plano, controles na notificação e tela bloqueada.
+- Compatibilidade com Android Auto, incluindo catálogo, capas e controles de
+  reprodução no veículo.
+- Interface responsiva para desktop Linux e celulares Android.
+- Tema escuro e identidade visual Meraki.
+
+## Download e instalação
+
+As versões disponíveis ficam na página de
 [Releases do Meraki](https://github.com/lindnergui/MERAKI/releases).
 
-### Pela interface gráfica
+### Linux — Flatpak
 
-Em distribuições com suporte a Flatpak, dê dois cliques no arquivo baixado e
-confirme a instalação na loja de aplicativos.
+Baixe o arquivo `.flatpak` mais recente para Linux x86_64.
 
-### Pelo terminal
-
-Se o comando `flatpak` ainda não estiver disponível, instale-o pela loja de
-aplicativos da sua distribuição ou siga o [guia oficial do
-Flatpak](https://flatpak.org/setup/).
-
-Na pasta que contém o arquivo baixado, execute:
+Pela interface gráfica, dê dois cliques no arquivo e confirme a instalação.
+Pelo terminal, execute na pasta do download:
 
 ```bash
-flatpak install --user ./meraki.flatpak
-```
-
-Depois, abra **Meraki** pelo menu de aplicativos ou execute:
-
-```bash
+flatpak install --user ./meraki-versao-x86_64.flatpak
 flatpak run com.github.lindnergui.meraki
 ```
 
-Para atualizar, baixe a versão mais recente e repita o comando de instalação.
-Para remover o aplicativo:
+Caso o Flatpak ainda não esteja instalado, siga o [guia oficial de
+configuração](https://flatpak.org/setup/). Para atualizar, instale o bundle
+mais recente novamente. Para remover o Meraki:
 
 ```bash
 flatpak uninstall com.github.lindnergui.meraki
 ```
 
+### Android — APK
+
+Quando um APK estiver disponível na Release, baixe o arquivo `.apk` no celular,
+abra-o e confirme a instalação. O Android pode solicitar autorização para
+instalar aplicativos dessa origem.
+
+Para instalar a partir de um computador com ADB configurado:
+
+```bash
+adb install -r meraki-versao.apk
+```
+
+Após instalar, abra o Meraki, permita as notificações e sincronize ou escaneie
+sua biblioteca. Em veículos compatíveis, o Meraki aparecerá como um app de
+mídia no Android Auto.
+
 ## Releases automáticas
 
 Ao publicar uma tag iniciada por `v`, o workflow
-[`flatpak.yml`](.github/workflows/flatpak.yml) compila o bundle Flatpak x86_64
-e o anexa automaticamente à GitHub Release. O workflow também pode ser
-executado manualmente para validar o build sem publicar uma Release.
+[`flatpak.yml`](.github/workflows/flatpak.yml) gera o bundle Flatpak x86_64 e o
+anexa automaticamente à GitHub Release.
+
+O APK Android é gerado e publicado manualmente pelo mantenedor. Isso permite
+testá-lo em dispositivos físicos e no Android Auto antes de anexá-lo à mesma
+Release.
 
 ## Desenvolvimento
 
-Para gerar e testar o Flatpak localmente, instale `flatpak` e
-`flatpak-builder`, configure o repositório Flathub e execute o script na raiz
-do projeto:
+Pré-requisitos: Flutter, Rust e o SDK Android para builds Android. Para Linux,
+instale também os requisitos de desenvolvimento do Flutter para GTK.
+
+```bash
+flutter pub get
+flutter analyze
+flutter test
+```
+
+### Executar no Linux
+
+```bash
+flutter run -d linux
+```
+
+### Gerar um APK Android de teste
+
+```bash
+flutter build apk --debug
+```
+
+O arquivo será criado em:
+
+```text
+build/app/outputs/flutter-apk/app-debug.apk
+```
+
+### Testar ou gerar o Flatpak localmente
+
+Instale `flatpak` e `flatpak-builder`, configure o repositório Flathub e rode:
 
 ```bash
 flatpak remote-add --if-not-exists --user flathub \
@@ -57,20 +103,11 @@ flatpak remote-add --if-not-exists --user flathub \
 scripts/build-flatpak.sh
 ```
 
-O bundle será criado em `dist/meraki.flatpak`. Para instalá-lo e testá-lo:
+O bundle será criado em `dist/meraki.flatpak` e pode ser testado assim:
 
 ```bash
 flatpak install --user ./dist/meraki.flatpak
 flatpak run com.github.lindnergui.meraki
-```
-
-Para executar o projeto Flutter diretamente durante o desenvolvimento:
-
-```bash
-flutter pub get
-flutter analyze
-flutter test
-flutter run -d linux
 ```
 
 Quando a API Rust mudar, regenere os bindings:

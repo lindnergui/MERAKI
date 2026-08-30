@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:meraki/src/ui/controllers/library_controller.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({required this.libraryController, super.key});
@@ -198,6 +201,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
+    if (!await _ensureLocalLibraryPermission()) return;
+
     try {
       await widget.libraryController.scanLocalMusic(directory);
       if (mounted) {
@@ -209,6 +214,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'Não foi possível ler a pasta.',
       );
     }
+  }
+
+  Future<bool> _ensureLocalLibraryPermission() async {
+    if (!Platform.isAndroid) return true;
+
+    // Permission.audio maps to READ_MEDIA_AUDIO on Android 13+, while the
+    // legacy storage permission covers devices running Android 12 or older.
+    final statuses = await <Permission>[
+      Permission.audio,
+      Permission.storage,
+    ].request();
+    final canReadLibrary =
+        (statuses[Permission.audio]?.isGranted ?? false) ||
+        (statuses[Permission.storage]?.isGranted ?? false);
+    if (canReadLibrary) return true;
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Permita o acesso a músicas para indexar sua biblioteca local.',
+          ),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Configurações',
+            onPressed: openAppSettings,
+          ),
+        ),
+      );
+    }
+    return false;
   }
 
   Future<void> _syncSubsonic() async {

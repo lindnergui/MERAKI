@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:media_kit/media_kit.dart';
@@ -18,9 +21,17 @@ Future<void> main() async {
   final userPreferences = UserPreferences();
   final initialUserName = await userPreferences.readUserName();
 
-  // just_audio uses media_kit on Linux. This must happen before the handler
-  // creates its AudioPlayer; Android continues to use just_audio natively.
-  JustAudioMediaKit.ensureInitialized();
+  // Keep artwork decoding bounded on phones with large libraries. ImageProvider
+  // still reuses Flutter's built-in cache; this only limits its memory budget.
+  PaintingBinding.instance.imageCache
+    ..maximumSize = 120
+    ..maximumSizeBytes = 32 << 20;
+
+  // just_audio uses media_kit on Linux. Android uses just_audio's native
+  // backend, so registering the Linux implementation there is unnecessary.
+  if (Platform.isLinux) {
+    JustAudioMediaKit.ensureInitialized();
+  }
 
   await RustLib.init();
 
@@ -28,21 +39,18 @@ Future<void> main() async {
   await repository.initialize();
 
   final audioHandler = await AudioService.init<MerakiAudioHandler>(
-    builder: MerakiAudioHandler.new,
+    builder: () => MerakiAudioHandler(repository: repository),
     config: const AudioServiceConfig(
-<<<<<<< HEAD
       // On Linux, audio_service_mpris derives the MPRIS D-Bus name from this
       // identifier. Keep it aligned with the Flatpak application ID so the
       // filtered session bus can publish the MediaSession/MPRIS service.
       androidNotificationChannelId: 'com.github.lindnergui.meraki',
-=======
-      androidNotificationChannelId: 'com.meraki.player.audio',
->>>>>>> 0f84d45483f4c0282b27b5b559ffade94ca85cd7
       androidNotificationChannelName: 'Reprodução do Meraki',
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: true,
     ),
   );
+  await audioHandler.refreshMediaLibrary();
 
   runApp(
     MerakiApp(

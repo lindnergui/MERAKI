@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:meraki/src/audio/meraki_audio_handler.dart';
 import 'package:meraki/src/rust/models/song.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// Reactive projection of the handler's MediaItem and PlaybackState streams.
 ///
@@ -52,9 +54,15 @@ class PlayerController extends ChangeNotifier {
       playbackState.value.shuffleMode != AudioServiceShuffleMode.none;
   AudioServiceRepeatMode get repeatMode => playbackState.value.repeatMode;
 
-  Future<void> playFromCatalog(Song song, List<Song> queue) {
+  Future<void> playFromCatalog(Song song, List<Song> queue) async {
+    // Android 13+ requires this runtime grant before it can show MediaSession
+    // controls in the notification shade. Playback remains available if the
+    // user declines it.
+    if (Platform.isAndroid && (await Permission.notification.status).isDenied) {
+      await Permission.notification.request();
+    }
     final index = queue.indexWhere((entry) => entry.id == song.id);
-    return _audioHandler.playQueue(queue, initialIndex: index < 0 ? 0 : index);
+    await _audioHandler.playQueue(queue, initialIndex: index < 0 ? 0 : index);
   }
 
   Future<void> togglePlayPause() {

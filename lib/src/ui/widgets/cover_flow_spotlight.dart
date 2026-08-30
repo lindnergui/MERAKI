@@ -182,7 +182,11 @@ class _CoverFlowCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: <Widget>[
                   if (song != null)
-                    CoverArtImage(coverArtUrlOrPath: song!.coverArtUrlOrPath),
+                    CoverArtImage(
+                      coverArtUrlOrPath: song!.coverArtUrlOrPath,
+                      cacheWidth: 800,
+                      cacheHeight: 800,
+                    ),
                   if (!focused)
                     ColoredBox(color: Colors.black.withValues(alpha: 0.38)),
                   DecoratedBox(

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:meraki/src/audio/meraki_audio_handler.dart';
 import 'package:meraki/src/data/music_repository.dart';
 import 'package:meraki/src/data/user_preferences.dart';
 import 'package:meraki/src/rust/models/song.dart';
@@ -13,11 +14,14 @@ class LibraryController extends ChangeNotifier {
   LibraryController({
     required MusicRepository repository,
     required UserPreferences userPreferences,
+    required MerakiAudioHandler audioHandler,
   }) : _repository = repository,
-       _userPreferences = userPreferences;
+       _userPreferences = userPreferences,
+       _audioHandler = audioHandler;
 
   final MusicRepository _repository;
   final UserPreferences _userPreferences;
+  final MerakiAudioHandler _audioHandler;
   List<Song> _songs = const <Song>[];
   Set<String> _favoriteSongIds = <String>{};
   bool _isLoading = false;
@@ -74,6 +78,7 @@ class LibraryController extends ChangeNotifier {
       ]);
       _songs = results[0] as List<Song>;
       _favoriteSongIds = results[1] as Set<String>;
+      await _audioHandler.updateMediaLibrary(_songs);
     } catch (error) {
       _errorMessage = _friendlyError(error);
       rethrow;
@@ -103,6 +108,7 @@ class LibraryController extends ChangeNotifier {
     try {
       await _repository.scanLocalMusic(directoryPath);
       _songs = await _repository.getAllSongs();
+      await _audioHandler.updateMediaLibrary(_songs);
     } catch (error) {
       _errorMessage = _friendlyError(error);
       rethrow;
@@ -129,6 +135,7 @@ class LibraryController extends ChangeNotifier {
         password: password,
       );
       _songs = await _repository.getAllSongs();
+      await _audioHandler.updateMediaLibrary(_songs);
     } catch (error) {
       _errorMessage = _friendlyError(error);
       rethrow;

@@ -11,6 +11,8 @@ class CoverArtImage extends StatelessWidget {
     required this.coverArtUrlOrPath,
     this.width,
     this.height,
+    this.cacheWidth,
+    this.cacheHeight,
     this.borderRadius = const BorderRadius.all(Radius.circular(12)),
     super.key,
   });
@@ -18,10 +20,17 @@ class CoverArtImage extends StatelessWidget {
   final String? coverArtUrlOrPath;
   final double? width;
   final double? height;
+  final int? cacheWidth;
+  final int? cacheHeight;
   final BorderRadius borderRadius;
 
   @override
   Widget build(BuildContext context) {
+    // Flutter caches ImageProviders in memory. Decoding an explicit thumbnail
+    // size prevents a very large remote album cover from consuming the cache
+    // while a user scrolls through a large catalog.
+    final resolvedCacheWidth = cacheWidth ?? _cacheDimension(context, width);
+    final resolvedCacheHeight = cacheHeight ?? _cacheDimension(context, height);
     final value = coverArtUrlOrPath?.trim();
     if (value == null || value.isEmpty) {
       return _frame(_placeholder(context));
@@ -37,23 +46,41 @@ class CoverArtImage extends StatelessWidget {
       image = Image.network(
         value,
         fit: BoxFit.cover,
+        cacheWidth: resolvedCacheWidth,
+        cacheHeight: resolvedCacheHeight,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
         errorBuilder: (_, _, _) => _placeholder(context),
       );
     } else if (isFileUri) {
       image = Image.file(
         File.fromUri(uri!),
         fit: BoxFit.cover,
+        cacheWidth: resolvedCacheWidth,
+        cacheHeight: resolvedCacheHeight,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
         errorBuilder: (_, _, _) => _placeholder(context),
       );
     } else {
       image = Image.file(
         File(value),
         fit: BoxFit.cover,
+        cacheWidth: resolvedCacheWidth,
+        cacheHeight: resolvedCacheHeight,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
         errorBuilder: (_, _, _) => _placeholder(context),
       );
     }
 
     return _frame(image);
+  }
+
+  int? _cacheDimension(BuildContext context, double? logicalSize) {
+    if (logicalSize == null || logicalSize <= 0) return null;
+    final pixels = logicalSize * MediaQuery.devicePixelRatioOf(context);
+    return pixels.round().clamp(1, 2048).toInt();
   }
 
   Widget _frame(Widget image) {

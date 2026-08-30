@@ -60,7 +60,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final desktop = constraints.maxWidth >= 760;
+            final desktop = constraints.maxWidth >= 600;
             final form = _WelcomeForm(
               nameController: _nameController,
               isSaving: _isSaving,

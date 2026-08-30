@@ -64,7 +64,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
 
     if (widget.embedded) return body;
     return Scaffold(
-      appBar: AppBar(title: const Text('Now Playing')),
+      appBar: AppBar(title: const Text('Tocando agora')),
       body: body,
     );
   }
@@ -93,7 +93,7 @@ class _NowPlayingBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 760;
+        final isDesktop = constraints.maxWidth >= 600;
         final artwork = _Artwork(item: item, desktop: isDesktop);
         final controls = _PlaybackControls(
           item: item,
@@ -180,6 +180,8 @@ class _Artwork extends StatelessWidget {
               ),
               child: CoverArtImage(
                 coverArtUrlOrPath: item.artUri?.toString(),
+                cacheWidth: 1200,
+                cacheHeight: 1200,
                 borderRadius: const BorderRadius.all(Radius.circular(30)),
               ),
             ),
