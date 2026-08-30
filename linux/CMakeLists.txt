@@ -7,7 +7,11 @@ project(runner LANGUAGES CXX)
 set(BINARY_NAME "meraki")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
+<<<<<<< HEAD
 set(APPLICATION_ID "com.github.lindnergui.meraki")
+=======
+set(APPLICATION_ID "com.meraki.player")
+>>>>>>> 0f84d45483f4c0282b27b5b559ffade94ca85cd7
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.

@@ -30,10 +30,14 @@ Future<void> main() async {
   final audioHandler = await AudioService.init<MerakiAudioHandler>(
     builder: MerakiAudioHandler.new,
     config: const AudioServiceConfig(
+<<<<<<< HEAD
       // On Linux, audio_service_mpris derives the MPRIS D-Bus name from this
       // identifier. Keep it aligned with the Flatpak application ID so the
       // filtered session bus can publish the MediaSession/MPRIS service.
       androidNotificationChannelId: 'com.github.lindnergui.meraki',
+=======
+      androidNotificationChannelId: 'com.meraki.player.audio',
+>>>>>>> 0f84d45483f4c0282b27b5b559ffade94ca85cd7
       androidNotificationChannelName: 'Reprodução do Meraki',
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: true,

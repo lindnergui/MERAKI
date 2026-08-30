@@ -1,0 +1,14 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Meraki
+GenericName=Music Player
+Comment=Player de música local e Subsonic
+Exec=meraki %U
+Icon=com.meraki.player
+Terminal=false
+Categories=AudioVideo;Audio;Player;
+Keywords=music;audio;player;subsonic;meraki;
+StartupNotify=true
+StartupWMClass=com.meraki.player
+MimeType=audio/mpeg;audio/flac;audio/ogg;audio/x-wav;audio/mp4;
