@@ -1,0 +1,160 @@
+id: com.github.lindnergui.meraki
+runtime: org.gnome.Platform
+runtime-version: '49'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.llvm20
+command: meraki
+
+# Flutter downloads its Linux engine during `precache` and Cargo resolves the
+# locked Rust dependency graph while the application is being built. Network
+# access here applies only to the isolated build sandbox, not to the app's
+# runtime permissions below.
+build-options:
+  # Flutter's Linux tool invokes CMake with CXX=clang++. GNOME's base SDK
+  # intentionally omits LLVM, so expose the matching 25.08 SDK extension.
+  append-path: /usr/lib/sdk/llvm20/bin
+  append-ld-library-path: /usr/lib/sdk/llvm20/lib
+  build-args:
+    - --share=network
+
+finish-args:
+  # Flutter desktop rendering and file dialogs.
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Subsonic streams and cover art.
+  - --share=network
+  # PulseAudio is the compatibility socket used by PipeWire on modern Linux.
+  - --socket=pulseaudio
+  # Read-only host access lets the Rust scanner index a library selected by the
+  # user without giving the application write access outside its sandbox.
+  - --filesystem=host:ro
+  # Native file pickers continue to work through the desktop portal.
+  - --talk-name=org.freedesktop.portal.Desktop
+  # audio_service_mpris registers one MPRIS name per process, ending in its
+  # PID. Restrict ownership to Meraki's application-ID namespace.
+  - --own-name=org.mpris.MediaPlayer2.com.github.lindnergui.meraki.*
+
+modules:
+  # libass is a mandatory dependency of current mpv releases. It is used for
+  # subtitle rendering by the welcome video and is not included in GNOME's SDK.
+  - name: libass
+    config-opts:
+      - --disable-static
+      - --enable-asm
+      - --enable-harfbuzz
+      - --enable-fontconfig
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+    sources:
+      - type: git
+        url: https://github.com/libass/libass.git
+        tag: 0.17.5
+        commit: 4a05d8127f525943ebf45fdc6497c9e665947f0d
+
+  # mpv's current rendering API requires libplacebo even when Meraki only
+  # exposes it through libmpv. The GNOME SDK does not provide its development
+  # package, so build the same pinned release used by Flathub's mpv manifest.
+  - name: libplacebo
+    buildsystem: meson
+    config-opts:
+      - -Dvulkan=enabled
+      - -Dshaderc=enabled
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+    sources:
+      - type: git
+        url: https://github.com/haasn/libplacebo.git
+        tag: v7.360.1
+        commit: cee9b076f2c63104ccfd497fa79c39a867293ec4
+
+  # media_kit_video links to libmpv at compile time and media_kit opens the
+  # shared library again at runtime. Flatpak runtimes intentionally do not
+  # ship libmpv, so bundle a focused libmpv build instead of relying on the
+  # host distribution's package.
+  - name: libmpv
+    buildsystem: meson
+    config-opts:
+      # Meraki uses libmpv through media_kit; installing the standalone player
+      # would only increase the final Flatpak size.
+      - -Dcplayer=false
+      - -Dlibmpv=true
+      - -Dbuild-date=false
+      - -Dwerror=false
+      # Required by media_kit_video's EGL/OpenGL render context and by the
+      # desktop audio path. The remaining optional integrations stay disabled
+      # to keep this private libmpv build lean and reproducible.
+      - -Dgl=enabled
+      - -Degl=enabled
+      - -Dplain-gl=enabled
+      - -Dpulse=enabled
+      - -Dalsa=disabled
+      - -Djack=disabled
+      - -Dopenal=disabled
+      - -Dpipewire=disabled
+      - -Djavascript=disabled
+      - -Dlua=disabled
+      - -Dvulkan=disabled
+      - -Dvaapi=disabled
+      - -Dvdpau=disabled
+      - -Ddrm=disabled
+      - -Dwayland=disabled
+      - -Dx11=disabled
+      - -Dlibarchive=disabled
+      - -Duchardet=disabled
+    sources:
+      # Pinned to the revision used by Flathub's official mpv manifest.
+      - type: git
+        url: https://github.com/mpv-player/mpv.git
+        tag: v0.41.0
+        commit: 41f6a645068483470267271e1d09966ca3b9f413
+
+  - name: meraki
+    buildsystem: simple
+    build-commands:
+      # SDKs must remain under /run/build. Files installed under /app are
+      # post-processed by flatpak-builder; doing that to rustc's bundled LLVM
+      # makes the compiler unloadable.
+      - ./rust-toolchain/install.sh --prefix=/run/build/meraki/rust --disable-ldconfig
+      - install -Dm755 flatpak/rustup-shim.sh /run/build/meraki/rust/bin/rustup
+      # Build commands run in separate Flatpak sandboxes. Keep pub packages in
+      # /run/build so plugin symlinks never point at the host's ~/.pub-cache.
+      - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter --version
+      - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter precache --linux
+      - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter pub get
+      - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; cargo build --manifest-path rust_core/Cargo.toml --release --locked
+      - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter build linux --release
+      # flutter_rust_bridge loads this library dynamically at startup. Copy it
+      # after Flutter has generated the bundle, exactly as in development.
+      - install -Dm755 target/release/librust_lib_meraki.so build/linux/x64/release/bundle/lib/librust_lib_meraki.so
+      - install -d /app/meraki
+      - cp -a build/linux/x64/release/bundle/. /app/meraki/
+      - install -Dm755 flatpak/meraki.sh /app/bin/meraki
+      - install -Dm644 flatpak/com.github.lindnergui.meraki.desktop /app/share/applications/com.github.lindnergui.meraki.desktop
+      - install -Dm644 flatpak/com.github.lindnergui.meraki.png /app/share/icons/hicolor/512x512/apps/com.github.lindnergui.meraki.png
+      - install -Dm644 flatpak/com.github.lindnergui.meraki.metainfo.xml /app/share/metainfo/com.github.lindnergui.meraki.metainfo.xml
+    sources:
+      - type: dir
+        path: ..
+        skip:
+          - .dart_tool
+          - .flatpak-builder
+          - build
+          - dist
+          - target
+      # Keep this in sync with rust-toolchain.toml. It is intentionally a
+      # build-only dependency and never copied into the final Flatpak.
+      - type: archive
+        url: https://static.rust-lang.org/dist/rust-1.98.0-x86_64-unknown-linux-gnu.tar.xz
+        sha256: ed8ee2df70909c88cbaf87a6cfa3920dac00b537de12a6abe6906641e0f5952f
+        dest: rust-toolchain
+      # Keep this aligned with Flutter stable. Pin a tag/commit before
+      # submitting the manifest to a third-party repository such as Flathub.
+      - type: git
+        url: https://github.com/flutter/flutter.git
+        branch: stable
+        dest: flutter-sdk

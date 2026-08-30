@@ -5,10 +5,12 @@ Name=Meraki
 GenericName=Music Player
 Comment=Player de música local e Subsonic
 Exec=meraki %U
-Icon=com.meraki.player
+Icon=com.github.lindnergui.meraki
 Terminal=false
 Categories=AudioVideo;Audio;Player;
 Keywords=music;audio;player;subsonic;meraki;
 StartupNotify=true
-StartupWMClass=com.meraki.player
+StartupWMClass=com.github.lindnergui.meraki
 MimeType=audio/mpeg;audio/flac;audio/ogg;audio/x-wav;audio/mp4;
+X-Flatpak=com.github.lindnergui.meraki
+
