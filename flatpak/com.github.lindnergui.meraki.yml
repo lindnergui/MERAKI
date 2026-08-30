@@ -121,18 +121,21 @@ modules:
       # makes the compiler unloadable.
       - ./rust-toolchain/install.sh --prefix=/run/build/meraki/rust --disable-ldconfig
       - install -Dm755 flatpak/rustup-shim.sh /run/build/meraki/rust/bin/rustup
+      # Flutter's Gradle wrapper cache is archived with numeric owners. The
+      # sandbox cannot restore them, so place a tar wrapper first in PATH.
+      - install -Dm755 flatpak/tar-no-same-owner.sh /run/build/meraki/bin/tar
       # Build commands run in separate Flatpak sandboxes. Keep pub packages in
       # /run/build so plugin symlinks never point at the host's ~/.pub-cache.
-      - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter --version
-      - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter precache --linux
-      - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter pub get
-      - export CARGO_HOME=/run/build/meraki/cargo; export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$CARGO_HOME/bin:$PATH; cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
+      - export PATH=/run/build/meraki/bin:/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter --version
+      - export PATH=/run/build/meraki/bin:/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter precache --linux
+      - export PATH=/run/build/meraki/bin:/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter pub get
+      - export CARGO_HOME=/run/build/meraki/cargo; export PATH=/run/build/meraki/bin:/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$CARGO_HOME/bin:$PATH; cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
       # Generated FRB bindings are intentionally excluded from Git. Generate
       # them from rust_core with the version pinned in this build command so
       # CI and local builds always use the same SongSource enum contract.
-      - export CARGO_HOME=/run/build/meraki/cargo; export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$CARGO_HOME/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter_rust_bridge_codegen generate
-      - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; cargo build --manifest-path rust_core/Cargo.toml --release --locked
-      - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter build linux --release
+      - export CARGO_HOME=/run/build/meraki/cargo; export PATH=/run/build/meraki/bin:/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$CARGO_HOME/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter_rust_bridge_codegen generate
+      - export PATH=/run/build/meraki/bin:/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; cargo build --manifest-path rust_core/Cargo.toml --release --locked
+      - export PATH=/run/build/meraki/bin:/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter build linux --release
       # flutter_rust_bridge loads this library dynamically at startup. Copy it
       # after Flutter has generated the bundle, exactly as in development.
       - install -Dm755 target/release/librust_lib_meraki.so build/linux/x64/release/bundle/lib/librust_lib_meraki.so
