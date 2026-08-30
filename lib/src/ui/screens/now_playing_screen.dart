@@ -107,11 +107,11 @@ class _NowPlayingBody extends StatelessWidget {
 
         return DecoratedBox(
           decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: const Alignment(-0.5, -0.7),
-              radius: 1.25,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
               colors: <Color>[
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.20),
+                MerakiColors.playerGradientTop,
                 MerakiColors.deepPurple,
               ],
             ),

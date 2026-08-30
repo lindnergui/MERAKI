@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
 abstract final class MerakiColors {
-  /// Base shared by the scaffold and main player surface.
-  static const Color deepPurple = Color(0xFF000000);
-  static const Color sidebar = Color(0xFF0F0F0F);
-  static const Color panel = Color(0xFF121212);
-  static const Color softText = Color(0xFFB3B3B3);
-  static const Color defaultAccent = Color(0xFF9DBF9E);
+  /// Core palette shared by the Linux and Android interfaces.
+  static const Color deepPurple = Color(0xFF0D0814);
+  static const Color playerGradientTop = Color(0xFF3D1B53);
+  static const Color sidebar = Color(0xFF1B1226);
+  static const Color panel = Color(0xFF1B1226);
+  static const Color softText = Color(0xFFA799B7);
+  static const Color defaultAccent = Color(0xFFA855F7);
+  static const Color secondaryAccent = Color(0xFFC084FC);
+  static const Color divider = Color(0xFF2A1B3D);
 }
 
 ThemeData buildMerakiTheme() {
@@ -18,17 +21,17 @@ ThemeData buildMerakiTheme() {
       ).copyWith(
         primary: accent,
         primaryContainer: accent,
-        secondary: accent,
-        secondaryContainer: accent,
-        tertiary: accent,
-        tertiaryContainer: accent,
+        secondary: MerakiColors.secondaryAccent,
+        secondaryContainer: MerakiColors.secondaryAccent,
+        tertiary: MerakiColors.secondaryAccent,
+        tertiaryContainer: MerakiColors.secondaryAccent,
         onPrimary: MerakiColors.deepPurple,
         onPrimaryContainer: MerakiColors.deepPurple,
         onSecondary: MerakiColors.deepPurple,
         onSecondaryContainer: MerakiColors.deepPurple,
         onTertiary: MerakiColors.deepPurple,
         onTertiaryContainer: MerakiColors.deepPurple,
-        surface: MerakiColors.deepPurple,
+        surface: MerakiColors.panel,
         surfaceContainer: MerakiColors.panel,
         surfaceContainerHigh: MerakiColors.panel,
         onSurface: const Color(0xFFFFFFFF),
@@ -40,12 +43,13 @@ ThemeData buildMerakiTheme() {
     brightness: Brightness.dark,
     colorScheme: scheme,
     scaffoldBackgroundColor: MerakiColors.deepPurple,
+    cardColor: MerakiColors.panel,
     fontFamily: 'sans-serif',
     textTheme: ThemeData.dark().textTheme.apply(
       bodyColor: scheme.onSurface,
       displayColor: scheme.onSurface,
     ),
-    dividerColor: Colors.white.withValues(alpha: 0.08),
+    dividerColor: MerakiColors.divider,
     appBarTheme: const AppBarTheme(
       backgroundColor: MerakiColors.deepPurple,
       surfaceTintColor: Colors.transparent,
@@ -63,7 +67,7 @@ ThemeData buildMerakiTheme() {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFF2B2B2B)),
+        borderSide: const BorderSide(color: MerakiColors.divider),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
