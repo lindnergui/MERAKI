@@ -57,12 +57,11 @@ mídia no Android Auto.
 ## Releases automáticas
 
 Ao publicar uma tag iniciada por `v`, o workflow
-[`flatpak.yml`](.github/workflows/flatpak.yml) gera o bundle Flatpak x86_64 e o
-anexa automaticamente à GitHub Release.
+[`release.yml`](.github/workflows/release.yml) gera e anexa automaticamente à
+GitHub Release:
 
-O APK Android é gerado e publicado manualmente pelo mantenedor. Isso permite
-testá-lo em dispositivos físicos e no Android Auto antes de anexá-lo à mesma
-Release.
+- `meraki-android.apk` para Android;
+- `meraki.flatpak` para Linux x86_64.
 
 ## Desenvolvimento
 
