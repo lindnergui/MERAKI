@@ -7,7 +7,7 @@ project(runner LANGUAGES CXX)
 set(BINARY_NAME "meraki")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "com.example.meraki")
+set(APPLICATION_ID "com.meraki.player")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -73,6 +73,22 @@ set_target_properties(${BINARY_NAME}
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
+
+# Flutter plugins are installed directly into bundle/lib. media_kit links its
+# plugins against libflutter during the build, so force a relocatable RPATH
+# instead of preserving the absolute ephemeral build directory. This is needed
+# both at runtime under /opt/meraki and for Fedora's RPM RPATH validation.
+foreach(plugin_target IN ITEMS
+  media_kit_libs_linux_plugin
+  media_kit_video_plugin
+)
+  if(TARGET ${plugin_target})
+    set_target_properties(${plugin_target} PROPERTIES
+      BUILD_WITH_INSTALL_RPATH TRUE
+      INSTALL_RPATH "$ORIGIN"
+    )
+  endif()
+endforeach()
 
 
 # === Installation ===

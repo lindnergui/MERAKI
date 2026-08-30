@@ -1,239 +1,142 @@
 # Meraki
 
-Base arquitetural de um player de música para **Android e Linux**, com Flutter na
-UI/reprodução, Rust no catálogo e `flutter_rust_bridge` v2 na ponte FFI.
+**Meraki** é um player de música para Linux e Android, feito para reunir sua
+biblioteca local e seu servidor Subsonic em uma experiência rápida, elegante e
+dark.
 
-As imagens anexadas à conversa são referências visuais para uma etapa futura. A
-base atual usa apenas a direção de cor roxa e não tenta reproduzir ainda as telas.
+## Download e instalação
 
-## Parte 1 — Estrutura de pastas e setup
+Baixe a versão mais recente na página de
+[Releases do Meraki](https://github.com/SEU-USUARIO/meraki/releases).
 
-### Pré-requisitos
+| Distribuição | Pacote |
+| --- | --- |
+| Ubuntu / Debian | Baixe o arquivo `.deb` |
+| Fedora | Baixe o arquivo `.rpm` |
 
-- Flutter com suporte a Android e Linux;
-- Android SDK + NDK configurados pelo Flutter;
-- Rust via `rustup`;
-- dependências de desktop do Flutter para Linux.
+### Ubuntu e Debian
 
-O projeto fixa Rust 1.98.0 em `rust-toolchain.toml`. O fluxo atual recomendado
-pela documentação do FRB v2 é instalar o codegen, executar `integrate` em um app
-Flutter existente e executar `generate` após mudanças na API Rust.
-
-### Inicialização equivalente, partindo de um diretório vazio
+Depois de baixar o pacote, abra um terminal na pasta do arquivo e execute:
 
 ```bash
-mkdir meraki
-cd meraki
-
-flutter create \
-  --platforms=android,linux \
-  --org app.meraki \
-  --project-name meraki \
-  .
-
-cargo new rust_core --lib --name meraki_rust_core
-cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
-
-flutter_rust_bridge_codegen integrate --rust-crate-dir rust_core
-flutter_rust_bridge_codegen generate
+sudo dpkg -i ./meraki-versao_amd64.deb
 ```
 
-As dependências principais poderiam ser adicionadas por CLI assim:
+Se o sistema informar dependências pendentes, corrija-as com:
 
 ```bash
-cargo add --manifest-path rust_core/Cargo.toml tokio --features macros,rt-multi-thread,sync
-cargo add --manifest-path rust_core/Cargo.toml reqwest --no-default-features --features json,query,rustls
-cargo add --manifest-path rust_core/Cargo.toml lofty
-cargo add --manifest-path rust_core/Cargo.toml rusqlite --features bundled
-cargo add --manifest-path rust_core/Cargo.toml flutter_rust_bridge@=2.13.0
-
-flutter pub add flutter_rust_bridge just_audio audio_service audio_session path_provider path
-flutter pub add just_audio_media_kit media_kit_libs_linux audio_service_mpris
+sudo apt --fix-broken install
 ```
 
-`rusqlite/bundled` é intencional: compila uma versão conhecida do SQLite junto
-ao core e reduz diferenças entre Android e distribuições Linux. `reqwest` usa
-Rustls para não depender do OpenSSL do sistema.
+### Fedora
 
-### Concluir este workspace preparado
-
-Este repositório já contém `pubspec.yaml`, código Dart e o crate `rust_core`. Como
-o host em que a base foi criada não tinha Flutter/Rust instalados, gere somente o
-boilerplate dependente dos toolchains:
+Depois de baixar o pacote, abra um terminal na pasta do arquivo e execute:
 
 ```bash
-flutter create \
-  --platforms=android,linux \
-  --org app.meraki \
-  --project-name meraki \
-  .
+sudo dnf install ./meraki-versao.rpm
+```
 
-cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
-flutter_rust_bridge_codegen integrate --rust-crate-dir rust_core
-flutter_rust_bridge_codegen generate
+Após a instalação, procure por **Meraki** no menu de aplicativos do GNOME,
+KDE ou outro ambiente desktop. Também é possível iniciar pelo terminal:
+
+```bash
+meraki
+```
+
+## Recursos
+
+- Biblioteca de músicas local, com leitura de metadados de áudio;
+- Integração com servidores Subsonic;
+- Reprodução de arquivos locais e streams remotos;
+- Controles de fila, volume, aleatório, repetição e mídia em segundo plano;
+- Favoritas persistentes e interface responsiva;
+- Interface dark com alto contraste e detalhes em verde sálvia;
+- Controles de sistema no Linux e MediaSession no Android.
+
+## Primeiros passos
+
+Na primeira abertura, informe apenas o nome que deseja usar no aplicativo.
+Depois, em **Configurações**, conecte seu servidor Subsonic ou selecione uma
+pasta local para criar a biblioteca. O Meraki guarda o catálogo em cache local
+para tornar a navegação mais rápida.
+
+## Para quem compila o Meraki
+
+O aplicativo usa Flutter para a interface e Rust através de
+`flutter_rust_bridge` para catálogo, metadados e banco de dados. O Rust é
+compilado e incluído automaticamente no bundle Linux pelo script de
+empacotamento.
+
+### Pré-requisitos para criar pacotes Linux
+
+- Flutter com suporte a Linux;
+- Rust estável e Cargo;
+- Ferramentas de build do Flutter Linux (`clang`, `cmake`, `ninja`, `pkg-config`
+  e `libgtk-3-dev` ou equivalentes);
+- `rpmbuild` para gerar `.rpm`;
+- `dpkg-deb` para gerar `.deb`.
+
+Em Fedora, instale as ferramentas de pacote com:
+
+```bash
+sudo dnf install rpm-build dpkg
+```
+
+Em Ubuntu/Debian:
+
+```bash
+sudo apt install rpm dpkg-dev
+```
+
+### Gerar os pacotes localmente
+
+Na raiz do repositório:
+
+```bash
+scripts/package-linux.sh --format all
+```
+
+O script executa, nesta ordem:
+
+1. `cargo build --release` em `rust_core`;
+2. `flutter build linux --release`;
+3. cópia explícita de `librust_lib_meraki.so` para
+   `build/linux/x64/release/bundle/lib/`;
+4. criação do lançador, arquivo `.desktop` e ícone do sistema;
+5. geração dos arquivos em `dist/linux/`.
+
+Para criar somente um formato:
+
+```bash
+scripts/package-linux.sh --format rpm
+scripts/package-linux.sh --format deb
+```
+
+Para reaproveitar um bundle release já criado, por exemplo em CI:
+
+```bash
+scripts/package-linux.sh --format rpm --skip-build
+```
+
+## Releases automáticas
+
+Ao publicar uma tag que começa com `v`, o workflow em
+[`.github/workflows/release.yml`](.github/workflows/release.yml) compila o
+bundle release com Rust, gera os pacotes Debian e Fedora e os anexa a uma GitHub
+Release. Atualize `SEU-USUARIO` nos links e nos metadados de empacotamento antes
+da primeira publicação pública.
+
+## Desenvolvimento
+
+```bash
 flutter pub get
-```
-
-Durante desenvolvimento da API Rust:
-
-```bash
-flutter_rust_bridge_codegen generate --watch
-```
-
-### Árvore final
-
-Itens marcados como “gerado” aparecem depois dos comandos acima.
-
-```text
-meraki/
-├── android/                         # gerado por flutter create
-├── linux/                           # gerado por flutter create
-├── lib/
-│   ├── main.dart                    # RustLib.init + AudioService.init
-│   └── src/
-│       ├── app.dart                 # shell mínimo da aplicação
-│       ├── audio/
-│       │   └── meraki_audio_handler.dart
-│       ├── data/
-│       │   └── music_repository.dart
-│       └── rust/                    # bindings Dart gerados pelo FRB
-│           ├── api/music.dart
-│           ├── models/song.dart
-│           └── frb_generated.dart
-├── rust_builder/                    # integração Cargokit gerada pelo FRB
-├── rust_core/
-│   ├── Cargo.toml
-│   └── src/
-│       ├── api/
-│       │   ├── mod.rs
-│       │   └── music.rs             # superfície exportada para Flutter
-│       ├── models/
-│       │   ├── mod.rs
-│       │   └── song.rs
-│       ├── database.rs              # SQLite e transações
-│       ├── error.rs
-│       ├── scanner.rs               # walkdir + lofty
-│       ├── subsonic.rs              # HTTP, token auth e parsing JSON
-│       └── lib.rs
-├── Cargo.toml                        # workspace Rust
-├── flutter_rust_bridge.yaml
-├── pubspec.yaml
-└── rust-toolchain.toml
-```
-
-## Parte 2 — Modelagem de dados no Rust
-
-O modelo exportado está em `rust_core/src/models/song.rs`:
-
-```rust
-pub enum SongSource {
-    Local,
-    Subsonic,
-}
-
-pub struct Song {
-    pub id: String,
-    pub title: String,
-    pub artist: Option<String>,
-    pub album: Option<String>,
-    pub cover_art_url_or_path: Option<String>,
-    pub stream_url_or_file_path: String,
-    pub duration_seconds: Option<u32>,
-    pub source: SongSource,
-}
-```
-
-IDs locais são UUID v5 determinísticos a partir do caminho canônico. IDs remotos
-incluem um hash curto do servidor, evitando colisões quando mais de um Subsonic
-for adicionado no futuro.
-
-## Parte 3 — Contratos da API Rust
-
-A superfície FFI está em `rust_core/src/api/music.rs`:
-
-```rust
-pub async fn init_db(database_path: String) -> Result<(), String>;
-pub async fn scan_local_music(path: String) -> Result<Vec<Song>, String>;
-pub async fn fetch_subsonic_songs(
-    server_url: String,
-    username: String,
-    password: String,
-) -> Result<Vec<Song>, String>;
-pub async fn get_all_songs() -> Result<Vec<Song>, String>;
-```
-
-`init_db` recebe um caminho porque o Flutter conhece o diretório correto do
-sandbox; no Dart, `MusicRepository.initialize()` preserva a API sem argumento.
-
-Já existe uma implementação-base funcional:
-
-- cria o schema SQLite, ativa WAL e substitui cada fonte em uma transação;
-- varre recursivamente formatos suportados pelo `lofty`, sem bloquear o executor
-  assíncrono;
-- autentica no Subsonic com `t=md5(password + salt)`, pagina os álbuns por
-  `getAlbumList2`, busca detalhes por `getAlbum` com concorrência limitada e
-  normaliza cada faixa para `Song`;
-- mantém a senha em texto puro somente durante a chamada. O cache guarda URLs
-  tokenizadas de stream/capa no banco privado do app; antes de suportar múltiplos
-  perfis, a próxima evolução de segurança é guardar segredos no keystore/keyring e
-  assinar URLs sob demanda.
-
-O próximo incremento do core deve extrair capas embutidas para um diretório de
-cache. Não se deve atravessar a FFI com blobs grandes durante a varredura.
-
-## Parte 4 — Integração Flutter
-
-`lib/main.dart` inicializa na ordem correta:
-
-```dart
-WidgetsFlutterBinding.ensureInitialized();
-if (Platform.isLinux) {
-  JustAudioMediaKit.ensureInitialized(linux: true, windows: false);
-}
-await RustLib.init();
-
-final repository = MusicRepository();
-await repository.initialize();
-```
-
-`MusicRepository` é a fronteira única para os bindings gerados. A reprodução fica
-em `MerakiAudioHandler`, que conecta `just_audio` a `audio_service`; Android recebe
-MediaSession/notificação, e Linux usa o backend `just_audio_media_kit`.
-
-### Configuração Android obrigatória
-
-Depois de `flutter create`, aplique o passo a passo em
-[`docs/android_setup.md`](docs/android_setup.md), que inclui a activity, o service,
-o media-button receiver e as permissões atuais. Não copie caminhos de
-armazenamento externo esperando que funcionem em todas as versões: no Android com
-scoped storage, uma biblioteca arbitrária deve ser escolhida via Storage Access
-Framework. O scanner atual aceita caminhos de filesystem acessíveis ao processo;
-uma futura camada Flutter deverá resolver URIs do SAF para arquivos/descritores
-legíveis pelo Rust.
-
-## Verificação
-
-```bash
-flutter_rust_bridge_codegen generate
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
 flutter analyze
 flutter test
 flutter run -d linux
 ```
 
-Para Android, liste os devices e execute:
+Quando a API Rust mudar, regenere os bindings:
 
 ```bash
-flutter devices
-flutter run -d <android-device-id>
+flutter_rust_bridge_codegen generate
 ```
-
-## Referências técnicas
-
-- [Quickstart oficial do flutter_rust_bridge v2](https://cjycode.com/flutter_rust_bridge/quickstart)
-- [Configuração do codegen FRB](https://cjycode.com/flutter_rust_bridge/guides/custom/codegen/inputs)
-- [just_audio no Linux](https://pub.dev/packages/just_audio)
-- [audio_service](https://pub.dev/packages/audio_service)
-- [lofty](https://docs.rs/lofty/latest/lofty/)
