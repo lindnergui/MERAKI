@@ -261,7 +261,7 @@ class _MobileShell extends StatelessWidget {
               NavigationDestination(
                 icon: Icon(PhosphorIconsRegular.musicNotes),
                 selectedIcon: Icon(PhosphorIconsFill.musicNotes),
-                label: 'Browse',
+                label: 'Início',
               ),
               NavigationDestination(
                 icon: Icon(PhosphorIconsRegular.playCircle),
@@ -277,7 +277,7 @@ class _MobileShell extends StatelessWidget {
 
   String _mobileTitleFor(_HomeDestination destination) {
     return switch (destination) {
-      _HomeDestination.home => 'Browse',
+      _HomeDestination.home => 'Início',
       _HomeDestination.allSongs => 'Todas as músicas',
       _HomeDestination.favorites => 'Favoritas',
       _HomeDestination.downloads => 'Músicas baixadas',
@@ -527,6 +527,7 @@ class _ContentForDestination extends StatelessWidget {
         songs: state.filteredSongs,
         state: state,
         desktop: desktop,
+        showSearch: !desktop,
       ),
       _HomeDestination.favorites => _SongsPage(
         title: 'Favoritas',
@@ -571,10 +572,9 @@ class _HomeDashboard extends StatelessWidget {
           sliver: SliverMainAxisGroup(
             slivers: <Widget>[
               SliverToBoxAdapter(
-                child: _DashboardGreeting(
-                  desktop: desktop,
-                  userName: state.widget.userName,
-                ),
+                child: desktop
+                    ? _DashboardGreeting(userName: state.widget.userName)
+                    : _MobileLibraryShortcuts(state: state),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 22)),
               SliverToBoxAdapter(
@@ -593,14 +593,7 @@ class _HomeDashboard extends StatelessWidget {
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 30)),
-              SliverToBoxAdapter(
-                child: _SectionHeader(
-                  title: 'Popular songs',
-                  actionLabel: 'Ver todas',
-                  onAction: () =>
-                      state.setDestination(_HomeDestination.allSongs),
-                ),
-              ),
+              SliverToBoxAdapter(child: _SectionHeader(title: 'Mais ouvidas')),
               const SliverToBoxAdapter(child: SizedBox(height: 14)),
               _PopularGrid(songs: songs, state: state, desktop: desktop),
             ],
@@ -612,9 +605,8 @@ class _HomeDashboard extends StatelessWidget {
 }
 
 class _DashboardGreeting extends StatelessWidget {
-  const _DashboardGreeting({required this.desktop, required this.userName});
+  const _DashboardGreeting({required this.userName});
 
-  final bool desktop;
   final String userName;
 
   @override
@@ -626,7 +618,7 @@ class _DashboardGreeting extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                desktop ? 'Olá, $userName' : 'Browse Music',
+                'Olá, $userName',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.7,
@@ -634,9 +626,7 @@ class _DashboardGreeting extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                desktop
-                    ? 'Seu som, com a sua identidade.'
-                    : 'Descubra o que combina com seu dia.',
+                'Seu som, com a sua identidade.',
                 style: Theme.of(
                   context,
                 ).textTheme.bodyLarge?.copyWith(color: MerakiColors.softText),
@@ -644,13 +634,114 @@ class _DashboardGreeting extends StatelessWidget {
             ],
           ),
         ),
-        if (!desktop)
-          IconButton(
-            tooltip: 'Atualizar biblioteca',
-            onPressed: () {},
-            icon: Icon(PhosphorIconsRegular.arrowClockwise),
-          ),
       ],
+    );
+  }
+}
+
+/// Touch-first shortcuts that replace the desktop sidebar on phones.
+class _MobileLibraryShortcuts extends StatelessWidget {
+  const _MobileLibraryShortcuts({required this.state});
+
+  final _HomeScreenState state;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'Sua biblioteca',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 12),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 2.45,
+          children: <Widget>[
+            _MobileLibraryShortcut(
+              label: 'Todas as músicas',
+              icon: PhosphorIconsRegular.musicNotes,
+              onTap: () => state.setDestination(_HomeDestination.allSongs),
+            ),
+            _MobileLibraryShortcut(
+              label: 'Álbuns',
+              icon: PhosphorIconsRegular.disc,
+              onTap: () => state.setDestination(_HomeDestination.albums),
+            ),
+            _MobileLibraryShortcut(
+              label: 'Artistas',
+              icon: PhosphorIconsRegular.usersThree,
+              onTap: () => state.setDestination(_HomeDestination.artists),
+            ),
+            _MobileLibraryShortcut(
+              label: 'Músicas baixadas',
+              icon: PhosphorIconsRegular.downloadSimple,
+              onTap: () => state.setDestination(_HomeDestination.downloads),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MobileLibraryShortcut extends StatelessWidget {
+  const _MobileLibraryShortcut({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Material(
+      color: MerakiColors.panel,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: <Widget>[
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(7),
+                  child: Icon(icon, size: 18, color: accent),
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1167,6 +1258,7 @@ class _SongsPage extends StatelessWidget {
     required this.songs,
     required this.state,
     required this.desktop,
+    this.showSearch = false,
     this.emptyTitle,
   });
 
@@ -1174,11 +1266,14 @@ class _SongsPage extends StatelessWidget {
   final List<Song> songs;
   final _HomeScreenState state;
   final bool desktop;
+  final bool showSearch;
   final String? emptyTitle;
 
   @override
   Widget build(BuildContext context) {
-    if (songs.isEmpty) return _EmptyCatalogHint(title: emptyTitle);
+    if (songs.isEmpty && !showSearch) {
+      return _EmptyCatalogHint(title: emptyTitle);
+    }
     return ListView.builder(
       padding: EdgeInsets.fromLTRB(
         desktop ? 24 : 16,
@@ -1186,16 +1281,43 @@ class _SongsPage extends StatelessWidget {
         desktop ? 24 : 16,
         28,
       ),
-      itemCount: songs.length + 1,
+      itemCount: songs.isEmpty ? 2 : songs.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (showSearch) ...<Widget>[
+                  const SizedBox(height: 14),
+                  TextField(
+                    autofocus: false,
+                    onChanged: state.setSearchQuery,
+                    decoration: InputDecoration(
+                      hintText: 'Pesquisar música, álbum ou artista',
+                      prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }
+        if (songs.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.only(top: 32),
+            child: Center(
+              child: Text(
+                'Nenhuma música encontrada.',
+                style: const TextStyle(color: MerakiColors.softText),
+              ),
             ),
           );
         }
