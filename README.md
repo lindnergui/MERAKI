@@ -6,7 +6,7 @@ biblioteca local e seu servidor Subsonic em uma experiência rápida e elegante.
 ## Download e instalação
 
 Baixe a versão mais recente na página de
-[Releases do Meraki](https://github.com/SEU-USUARIO/meraki/releases).
+[Releases do Meraki](https://github.com/lindnergui/meraki/releases).
 
 | Distribuição | Pacote |
 | --- | --- |
