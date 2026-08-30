@@ -126,6 +126,11 @@ modules:
       - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter --version
       - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter precache --linux
       - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter pub get
+      - export CARGO_HOME=/run/build/meraki/cargo; export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$CARGO_HOME/bin:$PATH; cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
+      # Generated FRB bindings are intentionally excluded from Git. Generate
+      # them from rust_core with the version pinned in this build command so
+      # CI and local builds always use the same SongSource enum contract.
+      - export CARGO_HOME=/run/build/meraki/cargo; export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$CARGO_HOME/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter_rust_bridge_codegen generate
       - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; cargo build --manifest-path rust_core/Cargo.toml --release --locked
       - export PATH=/run/build/meraki/flutter-sdk/bin:/run/build/meraki/rust/bin:$PATH; export PUB_CACHE=/run/build/meraki/pub-cache; flutter build linux --release
       # flutter_rust_bridge loads this library dynamically at startup. Copy it

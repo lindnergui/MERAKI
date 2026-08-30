@@ -38,6 +38,12 @@ jobs:
       - name: Resolve Flutter dependencies
         run: flutter pub get
 
+      - name: Install Flutter-Rust code generator
+        run: cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
+
+      - name: Generate Flutter-Rust bindings
+        run: flutter_rust_bridge_codegen generate
+
       - name: Build release APK
         run: flutter build apk --release
 
