@@ -4,10 +4,14 @@ import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:meraki/src/app.dart';
 import 'package:meraki/src/audio/meraki_audio_handler.dart';
 import 'package:meraki/src/data/music_repository.dart';
+import 'package:meraki/src/data/user_preferences.dart';
 import 'package:meraki/src/rust/frb_generated.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final userPreferences = UserPreferences();
+  final initialUserName = await userPreferences.readUserName();
 
   // just_audio uses media_kit on Linux. This must happen before the handler
   // creates its AudioPlayer; Android continues to use just_audio natively.
@@ -28,5 +32,12 @@ Future<void> main() async {
     ),
   );
 
-  runApp(MerakiApp(repository: repository, audioHandler: audioHandler));
+  runApp(
+    MerakiApp(
+      repository: repository,
+      audioHandler: audioHandler,
+      userPreferences: userPreferences,
+      initialUserName: initialUserName,
+    ),
+  );
 }

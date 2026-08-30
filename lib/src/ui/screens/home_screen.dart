@@ -19,13 +19,17 @@ enum _HomeDestination { home, allSongs, downloads, albums, artists }
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
+    required this.userName,
     required this.libraryController,
     required this.playerController,
+    required this.onLogout,
     super.key,
   });
 
+  final String userName;
   final LibraryController libraryController;
   final PlayerController playerController;
+  final Future<void> Function() onLogout;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -104,6 +108,14 @@ class _HomeScreenState extends State<HomeScreen> {
             SettingsScreen(libraryController: widget.libraryController),
       ),
     );
+  }
+
+  Future<void> logout() async {
+    try {
+      await widget.onLogout();
+    } catch (_) {
+      if (mounted) _showError('Não foi possível sair. Tente novamente.');
+    }
   }
 
   Future<void> playSong(Song song, List<Song> queue) async {
@@ -273,10 +285,10 @@ class _MerakiSidebar extends StatelessWidget {
               const Spacer(),
               const Divider(),
               const SizedBox(height: 12),
-              const _ProfileCard(),
+              _ProfileCard(userName: state.widget.userName),
               const SizedBox(height: 10),
               TextButton.icon(
-                onPressed: () {},
+                onPressed: state.logout,
                 icon: Icon(PhosphorIconsRegular.signOut, size: 18),
                 label: const Text('Sair'),
               ),
@@ -371,7 +383,7 @@ class _TopBar extends StatelessWidget {
             icon: Icon(PhosphorIconsRegular.gear),
           ),
           const SizedBox(width: 10),
-          const _ProfileHeader(),
+          _ProfileHeader(userName: state.widget.userName),
         ],
       ),
     );
@@ -467,7 +479,12 @@ class _HomeDashboard extends StatelessWidget {
           ),
           sliver: SliverMainAxisGroup(
             slivers: <Widget>[
-              SliverToBoxAdapter(child: _DashboardGreeting(desktop: desktop)),
+              SliverToBoxAdapter(
+                child: _DashboardGreeting(
+                  desktop: desktop,
+                  userName: state.widget.userName,
+                ),
+              ),
               const SliverToBoxAdapter(child: SizedBox(height: 22)),
               SliverToBoxAdapter(
                 child: _SectionHeader(
@@ -503,9 +520,10 @@ class _HomeDashboard extends StatelessWidget {
 }
 
 class _DashboardGreeting extends StatelessWidget {
-  const _DashboardGreeting({required this.desktop});
+  const _DashboardGreeting({required this.desktop, required this.userName});
 
   final bool desktop;
+  final String userName;
 
   @override
   Widget build(BuildContext context) {
@@ -516,7 +534,7 @@ class _DashboardGreeting extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text(
-                desktop ? 'Olá, Molly' : 'Browse Music',
+                desktop ? 'Olá, $userName' : 'Browse Music',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.7,
@@ -1239,41 +1257,45 @@ class _MerakiWordmark extends StatelessWidget {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader();
+  const _ProfileHeader({required this.userName});
+
+  final String userName;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        CircleAvatar(
+        const CircleAvatar(
           radius: 19,
           backgroundColor: Color(0xFF4A375C),
           child: Icon(Icons.person_rounded, color: Colors.white),
         ),
-        SizedBox(width: 9),
-        Text('Molly Hunter', style: TextStyle(fontWeight: FontWeight.w700)),
+        const SizedBox(width: 9),
+        Text(userName, style: const TextStyle(fontWeight: FontWeight.w700)),
       ],
     );
   }
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard();
+  const _ProfileCard({required this.userName});
+
+  final String userName;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: <Widget>[
-        CircleAvatar(
+        const CircleAvatar(
           backgroundColor: Color(0xFF4A375C),
           child: Icon(Icons.person_rounded, color: Colors.white),
         ),
-        SizedBox(width: 10),
+        const SizedBox(width: 10),
         Expanded(
           child: Text(
-            'Molly Hunter',
-            style: TextStyle(fontWeight: FontWeight.w700),
+            userName,
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
       ],

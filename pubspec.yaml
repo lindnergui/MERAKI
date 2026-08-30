@@ -22,6 +22,7 @@ dependencies:
   phosphoricons_flutter: ^1.0.0
   rust_lib_meraki:
     path: rust_builder
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_lints: ^6.0.0
