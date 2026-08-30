@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:meraki/src/data/user_preferences.dart';
 import 'package:meraki/src/ui/meraki_theme.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
@@ -201,8 +205,45 @@ class _WelcomeForm extends StatelessWidget {
   }
 }
 
-class _WelcomeArtwork extends StatelessWidget {
+class _WelcomeArtwork extends StatefulWidget {
   const _WelcomeArtwork();
+
+  @override
+  State<_WelcomeArtwork> createState() => _WelcomeArtworkState();
+}
+
+class _WelcomeArtworkState extends State<_WelcomeArtwork> {
+  late final Player _player = Player();
+  late final VideoController _videoController = VideoController(_player);
+  var _isVideoReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_startVideo());
+  }
+
+  Future<void> _startVideo() async {
+    try {
+      await _player.setVolume(0);
+      await _player.setPlaylistMode(PlaylistMode.single);
+      await _player.open(
+        Media('asset:///assets/videos/welcome_background_optimized.mp4'),
+      );
+      await _player.stream.width
+          .firstWhere((width) => (width ?? 0) > 0)
+          .timeout(const Duration(seconds: 3));
+      if (mounted) setState(() => _isVideoReady = true);
+    } catch (_) {
+      // The poster remains visible if the video decoder is unavailable.
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_player.dispose());
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -216,7 +257,7 @@ class _WelcomeArtwork extends StatelessWidget {
               colors: <Color>[
                 MerakiColors.deepPurple,
                 accent.withValues(alpha: 0.26),
-                const Color(0xFF160D1B),
+                MerakiColors.panel,
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -225,19 +266,26 @@ class _WelcomeArtwork extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: <Widget>[
-              Positioned(
-                top: -120,
-                right: -100,
-                child: _Orb(size: 470, color: accent.withValues(alpha: 0.30)),
+              Image.asset(
+                'assets/images/welcome_poster.webp',
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.medium,
               ),
-              Positioned(
-                right: -185,
-                bottom: -195,
-                child: _Orb(
-                  size: 520,
-                  color: Colors.white.withValues(alpha: 0.07),
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 320),
+                curve: Curves.easeOut,
+                opacity: _isVideoReady ? 1 : 0,
+                child: IgnorePointer(
+                  child: Video(
+                    controller: _videoController,
+                    fit: BoxFit.cover,
+                    fill: Colors.black,
+                    controls: NoVideoControls,
+                    wakelock: false,
+                  ),
                 ),
               ),
+              ColoredBox(color: Colors.black.withValues(alpha: 0.52)),
               Positioned.fill(
                 child: CustomPaint(painter: _OrbitPainter(color: accent)),
               ),
@@ -258,26 +306,6 @@ class _WelcomeArtwork extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _Orb extends StatelessWidget {
-  const _Orb({required this.size, required this.color});
-
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: size,
-      width: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
       ),
     );
   }

@@ -790,8 +790,8 @@ class _SpotlightCard extends StatelessWidget {
               gradient: LinearGradient(
                 colors: <Color>[
                   accent.withValues(alpha: 0.70),
-                  const Color(0xFF2A1E47),
-                  const Color(0xFF0E0A1B),
+                  MerakiColors.panel,
+                  MerakiColors.sidebar,
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -823,7 +823,7 @@ class _SpotlightCard extends StatelessWidget {
                     gradient: LinearGradient(
                       colors: <Color>[
                         Colors.transparent,
-                        const Color(0xFF120E21).withValues(alpha: 0.94),
+                        MerakiColors.deepPurple.withValues(alpha: 0.94),
                       ],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
@@ -1332,7 +1332,7 @@ class _ProfileHeader extends StatelessWidget {
       children: <Widget>[
         const CircleAvatar(
           radius: 19,
-          backgroundColor: Color(0xFF4A375C),
+          backgroundColor: MerakiColors.panel,
           child: Icon(Icons.person_rounded, color: Colors.white),
         ),
         const SizedBox(width: 9),
@@ -1352,7 +1352,7 @@ class _ProfileCard extends StatelessWidget {
     return Row(
       children: <Widget>[
         const CircleAvatar(
-          backgroundColor: Color(0xFF4A375C),
+          backgroundColor: MerakiColors.panel,
           child: Icon(Icons.person_rounded, color: Colors.white),
         ),
         const SizedBox(width: 10),

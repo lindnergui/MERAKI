@@ -1,6 +1,7 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:meraki/src/app.dart';
 import 'package:meraki/src/audio/meraki_audio_handler.dart';
 import 'package:meraki/src/data/music_repository.dart';
@@ -9,6 +10,10 @@ import 'package:meraki/src/rust/frb_generated.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Required by the looping video on WelcomeScreen. The initialization is
+  // idempotent, so just_audio_media_kit can safely initialize afterwards.
+  MediaKit.ensureInitialized();
 
   final userPreferences = UserPreferences();
   final initialUserName = await userPreferences.readUserName();
