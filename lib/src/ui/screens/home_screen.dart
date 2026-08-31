@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:meraki/src/rust/models/song.dart';
 import 'package:meraki/src/ui/controllers/library_controller.dart';
@@ -38,8 +39,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   _HomeDestination _destination = _HomeDestination.home;
   String _searchQuery = '';
-  bool _mobileNowPlaying = false;
   Song? _selectedSpotlightSong;
+  List<Song> _spotlightSongs = const <Song>[];
 
   @override
   void initState() {
@@ -77,20 +78,31 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadCatalog() async {
     try {
       await widget.libraryController.loadCatalog();
+      if (mounted) setState(_refreshSpotlightSongs);
     } catch (_) {
       if (mounted) _showError(widget.libraryController.errorMessage);
     }
   }
 
   void setDestination(_HomeDestination destination) {
+    final shouldRefreshSpotlight =
+        destination == _HomeDestination.home &&
+        _destination != _HomeDestination.home;
     setState(() {
       _destination = destination;
-      _mobileNowPlaying = false;
+      if (shouldRefreshSpotlight) _refreshSpotlightSongs();
     });
   }
 
-  void setMobileNowPlaying(bool value) {
-    setState(() => _mobileNowPlaying = value);
+  void _refreshSpotlightSongs() {
+    final selection = List<Song>.of(widget.libraryController.songs)
+      ..shuffle(math.Random());
+    _spotlightSongs = List<Song>.unmodifiable(
+      selection.take(math.min(selection.length, 12)),
+    );
+    _selectedSpotlightSong = _spotlightSongs.isEmpty
+        ? null
+        : _spotlightSongs.first;
   }
 
   void setSearchQuery(String value) => setState(() => _searchQuery = value);
@@ -101,6 +113,28 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) =>
             NowPlayingScreen(controller: widget.playerController),
       ),
+    );
+  }
+
+  void openMobileNowPlayingSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) =>
+          _MobileNowPlayingSheet(controller: widget.playerController),
+    );
+  }
+
+  void openMobileCatalogSheet(_HomeDestination destination) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) =>
+          _MobileCatalogSheet(destination: destination, state: this),
     );
   }
 
@@ -212,22 +246,10 @@ class _MobileShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isBrowsing = !state._mobileNowPlaying;
-    final hasSecondaryPage =
-        state._destination != _HomeDestination.home && isBrowsing;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: MerakiColors.deepPurple,
-        leading: hasSecondaryPage
-            ? IconButton(
-                tooltip: 'Voltar para início',
-                onPressed: () => state.setDestination(_HomeDestination.home),
-                icon: Icon(PhosphorIconsRegular.caretLeft),
-              )
-            : null,
-        title: hasSecondaryPage
-            ? Text(_mobileTitleFor(state._destination))
-            : _MerakiWordmark(compact: true),
+        title: const _MerakiWordmark(compact: true),
         actions: <Widget>[
           IconButton(
             tooltip: 'Configurações',
@@ -236,54 +258,447 @@ class _MobileShell extends StatelessWidget {
           ),
         ],
       ),
-      body: state._mobileNowPlaying
-          ? NowPlayingScreen(
-              controller: state.widget.playerController,
-              embedded: true,
-            )
-          : _MobileBrowse(state: state),
+      body: _MobileBrowse(state: state),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          if (!state._mobileNowPlaying)
-            MiniPlayer(
-              controller: state.widget.playerController,
-              onOpenNowPlaying: () {
-                state.setMobileNowPlaying(true);
-              },
-            ),
-          NavigationBar(
-            selectedIndex: state._mobileNowPlaying ? 1 : 0,
-            onDestinationSelected: (index) {
-              state.setMobileNowPlaying(index == 1);
-            },
-            destinations: <NavigationDestination>[
-              NavigationDestination(
-                icon: Icon(PhosphorIconsRegular.musicNotes),
-                selectedIcon: Icon(PhosphorIconsFill.musicNotes),
-                label: 'Início',
-              ),
-              NavigationDestination(
-                icon: Icon(PhosphorIconsRegular.playCircle),
-                selectedIcon: Icon(PhosphorIconsFill.playCircle),
-                label: 'Tocando agora',
-              ),
-            ],
+          MiniPlayer(
+            controller: state.widget.playerController,
+            onOpenNowPlaying: state.openMobileNowPlayingSheet,
           ),
+          _MobileFloatingNavigation(state: state),
         ],
       ),
     );
   }
+}
 
-  String _mobileTitleFor(_HomeDestination destination) {
-    return switch (destination) {
-      _HomeDestination.home => 'Início',
-      _HomeDestination.allSongs => 'Todas as músicas',
-      _HomeDestination.favorites => 'Favoritas',
-      _HomeDestination.downloads => 'Músicas baixadas',
-      _HomeDestination.albums => 'Álbuns',
-      _HomeDestination.artists => 'Artistas',
+/// Mobile navigation keeps the catalog actions one thumb-reach away without
+/// reproducing desktop-only shortcut cards in the page content.
+class _MobileFloatingNavigation extends StatelessWidget {
+  const _MobileFloatingNavigation({required this.state});
+
+  final _HomeScreenState state;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+        child: Material(
+          color: MerakiColors.panel,
+          elevation: 14,
+          shadowColor: Colors.black.withValues(alpha: 0.38),
+          borderRadius: BorderRadius.circular(28),
+          child: Container(
+            height: 70,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.9),
+              ),
+            ),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: _MobileNavigationIcon(
+                    tooltip: 'Todas as músicas',
+                    icon: PhosphorIconsRegular.musicNotes,
+                    onTap: () =>
+                        state.openMobileCatalogSheet(_HomeDestination.allSongs),
+                  ),
+                ),
+                Expanded(
+                  child: _MobileNavigationIcon(
+                    tooltip: 'Álbuns',
+                    icon: PhosphorIconsRegular.disc,
+                    onTap: () =>
+                        state.openMobileCatalogSheet(_HomeDestination.albums),
+                  ),
+                ),
+                _MobileNowPlayingNavigation(state: state),
+                Expanded(
+                  child: _MobileNavigationIcon(
+                    tooltip: 'Artistas',
+                    icon: PhosphorIconsRegular.usersThree,
+                    onTap: () =>
+                        state.openMobileCatalogSheet(_HomeDestination.artists),
+                  ),
+                ),
+                Expanded(
+                  child: _MobileNavigationIcon(
+                    tooltip: 'Músicas baixadas',
+                    icon: PhosphorIconsRegular.downloadSimple,
+                    onTap: () => state.openMobileCatalogSheet(
+                      _HomeDestination.downloads,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileNavigationIcon extends StatelessWidget {
+  const _MobileNavigationIcon({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: IconButton(
+        onPressed: onTap,
+        icon: Icon(icon, color: MerakiColors.softText),
+      ),
+    );
+  }
+}
+
+class _MobileNowPlayingNavigation extends StatelessWidget {
+  const _MobileNowPlayingNavigation({required this.state});
+
+  final _HomeScreenState state;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<MediaItem?>(
+      valueListenable: state.widget.playerController.currentItem,
+      builder: (context, item, _) {
+        final accent = Theme.of(context).colorScheme.primary;
+        return Transform.translate(
+          offset: const Offset(0, -13),
+          child: Tooltip(
+            message: 'Tocando agora',
+            child: Material(
+              color: item == null ? Colors.transparent : accent,
+              elevation: item == null ? 0 : 10,
+              shadowColor: accent.withValues(alpha: 0.55),
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: state.openMobileNowPlayingSheet,
+                child: SizedBox(
+                  width: 62,
+                  height: 62,
+                  child: item == null
+                      ? DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: MerakiColors.softText.withValues(
+                                alpha: 0.8,
+                              ),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Icon(
+                            PhosphorIconsRegular.playCircle,
+                            color: MerakiColors.softText,
+                            size: 30,
+                          ),
+                        )
+                      : Stack(
+                          fit: StackFit.expand,
+                          children: <Widget>[
+                            CoverArtImage(
+                              coverArtUrlOrPath: item.artUri?.toString(),
+                              cacheWidth: 180,
+                              cacheHeight: 180,
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(99),
+                              ),
+                            ),
+                            ColoredBox(
+                              color: Colors.black.withValues(alpha: 0.2),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MobileNowPlayingSheet extends StatelessWidget {
+  const _MobileNowPlayingSheet({required this.controller});
+
+  final PlayerController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.94,
+      minChildSize: 0.56,
+      maxChildSize: 0.97,
+      expand: false,
+      builder: (context, scrollController) => Material(
+        color: MerakiColors.panel,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        clipBehavior: Clip.antiAlias,
+        child: CustomScrollView(
+          controller: scrollController,
+          slivers: <Widget>[
+            const SliverToBoxAdapter(child: _SheetHandle()),
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: NowPlayingScreen(controller: controller, embedded: true),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileCatalogSheet extends StatefulWidget {
+  const _MobileCatalogSheet({required this.destination, required this.state});
+
+  final _HomeDestination destination;
+  final _HomeScreenState state;
+
+  @override
+  State<_MobileCatalogSheet> createState() => _MobileCatalogSheetState();
+}
+
+class _MobileCatalogSheetState extends State<_MobileCatalogSheet> {
+  String _query = '';
+
+  String get _title => switch (widget.destination) {
+    _HomeDestination.allSongs => 'Todas as músicas',
+    _HomeDestination.albums => 'Álbuns',
+    _HomeDestination.artists => 'Artistas',
+    _HomeDestination.downloads => 'Músicas baixadas',
+    _HomeDestination.home || _HomeDestination.favorites => 'Biblioteca',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.88,
+      minChildSize: 0.45,
+      maxChildSize: 0.96,
+      expand: false,
+      builder: (context, scrollController) => Material(
+        color: MerakiColors.panel,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            const _SheetHandle(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
+              child: Text(
+                _title,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            if (widget.destination == _HomeDestination.allSongs)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                child: TextField(
+                  autofocus: false,
+                  onChanged: (value) => setState(() => _query = value),
+                  decoration: InputDecoration(
+                    hintText: 'Pesquisar música, álbum ou artista',
+                    prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass),
+                  ),
+                ),
+              ),
+            Expanded(child: _buildContent(scrollController)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(ScrollController scrollController) {
+    return switch (widget.destination) {
+      _HomeDestination.allSongs ||
+      _HomeDestination.downloads => _SongCatalogList(
+        controller: scrollController,
+        songs: _songsForDestination,
+        state: widget.state,
+      ),
+      _HomeDestination.albums => _AlbumCatalogGrid(
+        controller: scrollController,
+        state: widget.state,
+      ),
+      _HomeDestination.artists => _ArtistCatalogList(
+        controller: scrollController,
+        state: widget.state,
+      ),
+      _HomeDestination.home || _HomeDestination.favorites => const SizedBox(),
     };
+  }
+
+  List<Song> get _songsForDestination {
+    Iterable<Song> songs = widget.state.widget.libraryController.songs;
+    if (widget.destination == _HomeDestination.downloads) {
+      songs = songs.where((song) => song.source == SongSource.local);
+    }
+
+    final query = _query.trim().toLowerCase();
+    if (query.isNotEmpty) {
+      songs = songs.where(
+        (song) => <String?>[song.title, song.artist, song.album]
+            .whereType<String>()
+            .any((value) => value.toLowerCase().contains(query)),
+      );
+    }
+    return songs.toList(growable: false);
+  }
+}
+
+class _SheetHandle extends StatelessWidget {
+  const _SheetHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 42,
+        height: 4,
+        margin: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: MerakiColors.softText.withValues(alpha: 0.48),
+          borderRadius: BorderRadius.circular(99),
+        ),
+      ),
+    );
+  }
+}
+
+class _SongCatalogList extends StatelessWidget {
+  const _SongCatalogList({
+    required this.controller,
+    required this.songs,
+    required this.state,
+  });
+
+  final ScrollController controller;
+  final List<Song> songs;
+  final _HomeScreenState state;
+
+  @override
+  Widget build(BuildContext context) {
+    if (songs.isEmpty) {
+      return const _EmptyCatalogHint(title: 'Nenhuma música encontrada.');
+    }
+    return ListView.builder(
+      controller: controller,
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+      itemCount: songs.length,
+      itemBuilder: (context, index) {
+        final song = songs[index];
+        return SongTile(song: song, onPlay: () => state.playSong(song, songs));
+      },
+    );
+  }
+}
+
+class _AlbumCatalogGrid extends StatelessWidget {
+  const _AlbumCatalogGrid({required this.controller, required this.state});
+
+  final ScrollController controller;
+  final _HomeScreenState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final albums = state.widget.libraryController.albums.entries.toList();
+    if (albums.isEmpty)
+      return const _EmptyCatalogHint(title: 'Nenhum álbum encontrado.');
+    return GridView.builder(
+      controller: controller,
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 14,
+        childAspectRatio: 0.82,
+      ),
+      itemCount: albums.length,
+      itemBuilder: (context, index) {
+        final entry = albums[index];
+        final first = entry.value.first;
+        return _PopularSongCard(
+          song: first,
+          onTap: () => state.playSong(first, entry.value),
+          enableHover: false,
+        );
+      },
+    );
+  }
+}
+
+class _ArtistCatalogList extends StatelessWidget {
+  const _ArtistCatalogList({required this.controller, required this.state});
+
+  final ScrollController controller;
+  final _HomeScreenState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final artists = <String, List<Song>>{};
+    for (final song in state.widget.libraryController.songs) {
+      final value = song.artist?.trim();
+      final name = value == null || value.isEmpty
+          ? 'Artista desconhecido'
+          : value;
+      artists.putIfAbsent(name, () => <Song>[]).add(song);
+    }
+    final entries = artists.entries.toList()
+      ..sort((first, second) => first.key.compareTo(second.key));
+    if (entries.isEmpty) {
+      return const _EmptyCatalogHint(title: 'Nenhum artista encontrado.');
+    }
+    return ListView.separated(
+      controller: controller,
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      itemCount: entries.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        return ListTile(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          tileColor: MerakiColors.deepPurple.withValues(alpha: 0.5),
+          leading: CircleAvatar(
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.2),
+            child: Icon(PhosphorIconsRegular.userCircle),
+          ),
+          title: Text(entry.key),
+          subtitle: Text(
+            '${entry.value.length} faixa${entry.value.length == 1 ? '' : 's'}',
+          ),
+          trailing: Icon(PhosphorIconsRegular.play),
+          onTap: () => state.playSong(entry.value.first, entry.value),
+        );
+      },
+    );
   }
 }
 
@@ -560,6 +975,7 @@ class _HomeDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final songs = state.filteredSongs;
+    final spotlightSongs = state._spotlightSongs;
     return CustomScrollView(
       slivers: <Widget>[
         SliverPadding(
@@ -571,12 +987,12 @@ class _HomeDashboard extends StatelessWidget {
           ),
           sliver: SliverMainAxisGroup(
             slivers: <Widget>[
-              SliverToBoxAdapter(
-                child: desktop
-                    ? _DashboardGreeting(userName: state.widget.userName)
-                    : _MobileLibraryShortcuts(state: state),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 22)),
+              if (desktop)
+                SliverToBoxAdapter(
+                  child: _DashboardGreeting(userName: state.widget.userName),
+                ),
+              if (desktop)
+                const SliverToBoxAdapter(child: SizedBox(height: 22)),
               SliverToBoxAdapter(
                 child: _SectionHeader(
                   title: 'Meraki Spotlight',
@@ -586,7 +1002,7 @@ class _HomeDashboard extends StatelessWidget {
               const SliverToBoxAdapter(child: SizedBox(height: 14)),
               SliverToBoxAdapter(
                 child: CoverFlowSpotlight(
-                  songs: songs,
+                  songs: spotlightSongs,
                   onPlay: (song) => state.playSong(song, songs),
                   desktop: desktop,
                   onSelectionChanged: state.setSelectedSpotlightSong,
@@ -635,113 +1051,6 @@ class _DashboardGreeting extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Touch-first shortcuts that replace the desktop sidebar on phones.
-class _MobileLibraryShortcuts extends StatelessWidget {
-  const _MobileLibraryShortcuts({required this.state});
-
-  final _HomeScreenState state;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          'Sua biblioteca',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 2.45,
-          children: <Widget>[
-            _MobileLibraryShortcut(
-              label: 'Todas as músicas',
-              icon: PhosphorIconsRegular.musicNotes,
-              onTap: () => state.setDestination(_HomeDestination.allSongs),
-            ),
-            _MobileLibraryShortcut(
-              label: 'Álbuns',
-              icon: PhosphorIconsRegular.disc,
-              onTap: () => state.setDestination(_HomeDestination.albums),
-            ),
-            _MobileLibraryShortcut(
-              label: 'Artistas',
-              icon: PhosphorIconsRegular.usersThree,
-              onTap: () => state.setDestination(_HomeDestination.artists),
-            ),
-            _MobileLibraryShortcut(
-              label: 'Músicas baixadas',
-              icon: PhosphorIconsRegular.downloadSimple,
-              onTap: () => state.setDestination(_HomeDestination.downloads),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _MobileLibraryShortcut extends StatelessWidget {
-  const _MobileLibraryShortcut({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
-    return Material(
-      color: MerakiColors.panel,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: <Widget>[
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(7),
-                  child: Icon(icon, size: 18, color: accent),
-                ),
-              ),
-              const SizedBox(width: 9),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

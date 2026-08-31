@@ -164,6 +164,11 @@ class MerakiAudioHandler extends BaseAudioHandler
       ..addAll(songs.map(_mediaItemForSong));
     queue.add(List<MediaItem>.unmodifiable(_mediaItems));
 
+    // Android needs the active MediaItem before the foreground playback state
+    // is emitted. Publishing it first guarantees that the notification and
+    // lock-screen session have artwork and metadata on the first play event.
+    mediaItem.add(_mediaItems[safeInitialIndex]);
+
     await _player.setAudioSources(
       songs.map(_audioSourceForSong).toList(growable: false),
       initialIndex: safeInitialIndex,

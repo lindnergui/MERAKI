@@ -55,14 +55,21 @@ class PlayerController extends ChangeNotifier {
   AudioServiceRepeatMode get repeatMode => playbackState.value.repeatMode;
 
   Future<void> playFromCatalog(Song song, List<Song> queue) async {
-    // Android 13+ requires this runtime grant before it can show MediaSession
-    // controls in the notification shade. Playback remains available if the
-    // user declines it.
-    if (Platform.isAndroid && (await Permission.notification.status).isDenied) {
-      await Permission.notification.request();
-    }
+    await _ensureAndroidNotificationPermission();
     final index = queue.indexWhere((entry) => entry.id == song.id);
     await _audioHandler.playQueue(queue, initialIndex: index < 0 ? 0 : index);
+  }
+
+  /// Android 13+ keeps media notifications behind POST_NOTIFICATIONS.
+  /// Request it only while it is still requestable; playback remains usable
+  /// when the user has permanently declined the permission.
+  Future<void> _ensureAndroidNotificationPermission() async {
+    if (!Platform.isAndroid) return;
+
+    final status = await Permission.notification.status;
+    if (!status.isGranted && !status.isPermanentlyDenied) {
+      await Permission.notification.request();
+    }
   }
 
   Future<void> togglePlayPause() {

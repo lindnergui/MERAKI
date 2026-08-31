@@ -46,7 +46,12 @@ class _CoverFlowSpotlightState extends State<CoverFlowSpotlight> {
   void didUpdateWidget(covariant CoverFlowSpotlight oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.songs != widget.songs) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _publishSelection());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _page = 0;
+        if (_pageController.hasClients) _pageController.jumpToPage(0);
+        _publishSelection();
+      });
     }
   }
 
@@ -79,7 +84,10 @@ class _CoverFlowSpotlightState extends State<CoverFlowSpotlight> {
 
   @override
   Widget build(BuildContext context) {
-    final songs = widget.songs.take(7).toList(growable: false);
+    // The selection is randomized by HomeScreen whenever the user re-enters
+    // the dashboard. Keep up to twelve items discoverable without inflating
+    // the PageView's active widget count.
+    final songs = widget.songs.take(12).toList(growable: false);
     final cardCount = math.max(songs.length, 4);
 
     return SizedBox(

@@ -46,6 +46,10 @@ Future<void> main() async {
       // filtered session bus can publish the MediaSession/MPRIS service.
       androidNotificationChannelId: 'com.github.lindnergui.meraki',
       androidNotificationChannelName: 'Reprodução do Meraki',
+      androidNotificationChannelDescription:
+          'Controles de reprodução de música do Meraki.',
+      androidNotificationIcon: 'drawable/ic_stat_meraki',
+      androidNotificationColor: 0xFFA855F7,
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: true,
     ),
