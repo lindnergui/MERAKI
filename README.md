@@ -1,116 +1,165 @@
-# Meraki player
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lindnergui/MERAKI/main/assets/images/meraki_logo.png" width="180" alt="Logo do Meraki Player">
+</p>
 
-**Meraki-player** é um player de música para **Linux** e **Android**. Ele reúne a
-biblioteca local e servidores Subsonic em uma interface elegante, com reprodução em
-segundo plano e controles integrados ao sistema.
+<h1 align="center">Meraki Player</h1>
 
-## Recursos
+<p align="center">
+  Sua música, do seu jeito: biblioteca local, Subsonic e reprodução integrada<br>
+  para Linux e Android — inclusive no Android Auto.
+</p>
 
-- Biblioteca local e streaming por Subsonic.
-- Reprodução em segundo plano, controles na notificação e tela bloqueada.
-- Compatibilidade com Android Auto, incluindo catálogo, capas e controles de
-  reprodução no veículo.
-- Interface responsiva para desktop Linux e celulares Android.
-- Tema escuro e identidade visual Meraki.
+<p align="center">
+  <a href="https://github.com/lindnergui/MERAKI/releases/latest"><img src="https://img.shields.io/github/v/release/lindnergui/MERAKI?display_name=tag&amp;sort=semver&amp;style=for-the-badge" alt="Versão mais recente"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/lindnergui/MERAKI?style=for-the-badge" alt="Licença MIT"></a>
+  <img src="https://img.shields.io/badge/plataformas-Linux%20%7C%20Android-A855F7?style=for-the-badge" alt="Linux e Android">
+  <a href="https://github.com/lindnergui/MERAKI/actions/workflows/release.yml"><img src="https://github.com/lindnergui/MERAKI/actions/workflows/release.yml/badge.svg" alt="Status da release"></a>
+</p>
 
-## Download e instalação
+## Download
 
-As versões disponíveis ficam na página de
-[Releases do Meraki](https://github.com/lindnergui/MERAKI/releases).
+> [!IMPORTANT]
+> Baixe o Meraki Player somente pela página oficial de
+> [Releases do GitHub](https://github.com/lindnergui/MERAKI/releases/latest).
+> Ela contém sempre a versão estável mais recente e suas notas de lançamento.
+
+| Sistema | Formato | Suporte / distribuições | Download oficial |
+| --- | --- | --- | --- |
+| Linux | Flatpak | Linux x86-64; Fedora, Ubuntu, Debian e outras distribuições compatíveis com Flatpak | [Baixar Flatpak](https://github.com/lindnergui/MERAKI/releases/latest/download/meraki.flatpak) |
+| Linux | RPM | Fedora, RHEL, openSUSE e derivados | [Ver disponibilidade nas Releases](https://github.com/lindnergui/MERAKI/releases/latest) |
+| Android | APK | Android e Android Auto | [Baixar APK](https://github.com/lindnergui/MERAKI/releases/latest/download/meraki-android.apk) |
+
+[Ver todas as versões e notas de lançamento](https://github.com/lindnergui/MERAKI/releases)
+
+## Instalação
 
 ### Linux — Flatpak
 
-Baixe o arquivo `.flatpak` mais recente para Linux x86_64.
-
-Pela interface gráfica, dê dois cliques no arquivo e confirme a instalação.
-Pelo terminal, execute na pasta do download:
+Baixe o arquivo `meraki.flatpak`. Você pode dar dois cliques nele para abrir a
+loja de aplicativos compatível da sua distribuição ou instalar pelo terminal:
 
 ```bash
-flatpak install --user ./meraki-versao-x86_64.flatpak
+flatpak install --user ./meraki.flatpak
 flatpak run com.github.lindnergui.meraki
 ```
 
-Caso o Flatpak ainda não esteja instalado, siga o [guia oficial de
+Caso ainda não tenha Flatpak, siga o [guia oficial de
 configuração](https://flatpak.org/setup/). Para atualizar, instale o bundle
-mais recente novamente. Para remover o Meraki:
+mais recente novamente. Para remover o Meraki Player:
 
 ```bash
 flatpak uninstall com.github.lindnergui.meraki
 ```
 
-### Android — APK
+### Linux — RPM
 
-Quando um APK estiver disponível na Release, baixe o arquivo `.apk` no celular,
-abra-o e confirme a instalação. O Android pode solicitar autorização para
-instalar aplicativos dessa origem.
-
-Para instalar a partir de um computador com ADB configurado:
+Quando um pacote RPM estiver disponível na Release, baixe-o e execute o comando
+abaixo na pasta do download. Ele funciona em Fedora, RHEL e distribuições
+compatíveis:
 
 ```bash
-adb install -r meraki-versao.apk
+sudo dnf install ./meraki-*.rpm
 ```
 
-Após instalar, abra o Meraki, permita as notificações e sincronize ou escaneie
-sua biblioteca. Em veículos compatíveis, o Meraki aparecerá como um app de
-mídia no Android Auto.
+Também é possível abrir o arquivo RPM pela loja de aplicativos ou pelo
+instalador gráfico da distribuição.
 
-## Releases automáticas
+### Android — APK e Android Auto
 
-Ao publicar uma tag iniciada por `v`, o workflow
-[`release.yml`](.github/workflows/release.yml) gera e anexa automaticamente à
-GitHub Release:
+1. Baixe `meraki-android.apk` no celular pela página de Releases.
+2. Ao abrir o arquivo, permita a instalação de apps dessa origem quando o
+   Android solicitar.
+3. Confirme a instalação e abra o **Meraki Player**.
+4. Para o Android Auto, conecte o celular ao veículo após instalar o app. O
+   Meraki aparecerá como aplicativo de mídia em veículos compatíveis.
+
+> [!TIP]
+> Instale APKs apenas da Release oficial. Você pode desativar novamente a
+> permissão de fontes desconhecidas após a instalação.
+
+## Principais recursos
+
+- biblioteca local: escaneie e reproduza músicas armazenadas no dispositivo;
+- Subsonic: conecte seu servidor para navegar e reproduzir o catálogo remoto;
+- reprodução em segundo plano com controles na notificação, tela bloqueada e
+  integração MPRIS no Linux;
+- Android Auto: catálogo, metadados, capas e comandos de mídia no veículo;
+- favoritos, álbuns, artistas, músicas baixadas e controles de fila;
+- interface escura, responsiva e otimizada para desktop e celulares;
+- verificação opcional de atualizações a cada inicialização.
+
+## Atualizações e Releases
+
+O Meraki verifica de forma opcional se há uma Release mais recente ao iniciar.
+Escolha **Atualizar agora** para abrir a página oficial ou **Agora não** para
+continuar usando a versão instalada.
+
+O workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) é
+executado quando uma tag iniciada por `v` é enviada ao GitHub. Ele gera e anexa
+automaticamente à Release:
 
 - `meraki-android.apk` para Android;
-- `meraki.flatpak` para Linux x86_64.
+- `meraki.flatpak` para Linux x86-64.
 
 ## Desenvolvimento
 
-Pré-requisitos: Flutter, Rust e o SDK Android para builds Android. Para Linux,
-instale também os requisitos de desenvolvimento do Flutter para GTK.
+O Meraki Player usa **Flutter** e **Rust** com `flutter_rust_bridge`. Este
+projeto não utiliza Node.js ou Tauri; os comandos abaixo são os equivalentes
+corretos para desenvolver e compilar o aplicativo.
+
+### Pré-requisitos
+
+- Flutter estável;
+- Rust (a versão definida em [`rust-toolchain.toml`](rust-toolchain.toml));
+- Android SDK e JDK 17 para gerar APKs;
+- para Linux, as dependências de desenvolvimento do Flutter/GTK;
+- para Flatpak, `flatpak` e `flatpak-builder`.
+
+### Preparar o ambiente
 
 ```bash
+git clone https://github.com/lindnergui/MERAKI.git
+cd MERAKI
 flutter pub get
+flutter_rust_bridge_codegen generate
+```
+
+### Executar e validar
+
+```bash
+flutter run -d linux
 flutter analyze
 flutter test
 ```
 
-### Executar no Linux
+### Gerar um APK Android
 
 ```bash
-flutter run -d linux
+flutter build apk --release
 ```
 
-### Gerar um APK Android de teste
-
-```bash
-flutter build apk --debug
-```
-
-O arquivo será criado em:
+O arquivo final é criado em:
 
 ```text
-build/app/outputs/flutter-apk/app-debug.apk
+build/app/outputs/flutter-apk/app-release.apk
 ```
 
-### Testar ou gerar o Flatpak localmente
+### Gerar pacotes Linux localmente
 
-Instale `flatpak` e `flatpak-builder`, configure o repositório Flathub e rode:
+Para criar e testar o Flatpak:
 
 ```bash
-flatpak remote-add --if-not-exists --user flathub \
-  https://dl.flathub.org/repo/flathub.flatpakrepo
 scripts/build-flatpak.sh
-```
-
-O bundle será criado em `dist/meraki.flatpak` e pode ser testado assim:
-
-```bash
 flatpak install --user ./dist/meraki.flatpak
 flatpak run com.github.lindnergui.meraki
 ```
 
-Quando a API Rust mudar, regenere os bindings:
+Para criar um RPM localmente em uma distribuição que tenha `rpmbuild`:
 
 ```bash
-flutter_rust_bridge_codegen generate
+scripts/package-linux.sh --format rpm
 ```
+
+## Licença
+
+Distribuído sob a licença MIT. Consulte [LICENSE](LICENSE).
