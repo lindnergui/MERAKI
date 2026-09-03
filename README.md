@@ -1,6 +1,6 @@
-# Meraki
+# Meraki player
 
-**Meraki** é um player de música para **Linux** e **Android**. Ele reúne a
+**Meraki-player** é um player de música para **Linux** e **Android**. Ele reúne a
 biblioteca local e servidores Subsonic em uma interface elegante, com reprodução em
 segundo plano e controles integrados ao sistema.
 
