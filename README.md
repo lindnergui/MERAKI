@@ -26,7 +26,6 @@
 | Sistema | Formato | Suporte / distribuições | Download oficial |
 | --- | --- | --- | --- |
 | Linux | Flatpak | Linux x86-64; Fedora, Ubuntu, Debian e outras distribuições compatíveis com Flatpak | [Baixar Flatpak](https://github.com/lindnergui/MERAKI/releases/latest/download/meraki.flatpak) |
-| Linux | RPM | Fedora, RHEL, openSUSE e derivados | [Ver disponibilidade nas Releases](https://github.com/lindnergui/MERAKI/releases/latest) |
 | Android | APK | Android e Android Auto | [Baixar APK](https://github.com/lindnergui/MERAKI/releases/latest/download/meraki-android.apk) |
 
 [Ver todas as versões e notas de lançamento](https://github.com/lindnergui/MERAKI/releases)
@@ -50,19 +49,6 @@ mais recente novamente. Para remover o Meraki Player:
 ```bash
 flatpak uninstall com.github.lindnergui.meraki
 ```
-
-### Linux — RPM
-
-Quando um pacote RPM estiver disponível na Release, baixe-o e execute o comando
-abaixo na pasta do download. Ele funciona em Fedora, RHEL e distribuições
-compatíveis:
-
-```bash
-sudo dnf install ./meraki-*.rpm
-```
-
-Também é possível abrir o arquivo RPM pela loja de aplicativos ou pelo
-instalador gráfico da distribuição.
 
 ### Android — APK e Android Auto
 
@@ -152,12 +138,6 @@ Para criar e testar o Flatpak:
 scripts/build-flatpak.sh
 flatpak install --user ./dist/meraki.flatpak
 flatpak run com.github.lindnergui.meraki
-```
-
-Para criar um RPM localmente em uma distribuição que tenha `rpmbuild`:
-
-```bash
-scripts/package-linux.sh --format rpm
 ```
 
 ## Licença
